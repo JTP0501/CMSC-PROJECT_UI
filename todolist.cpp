@@ -5,6 +5,7 @@
 #include <QBoxLayout>
 #include <QInputDialog>
 #include "customstringlistmodel.h"
+#include "taskeditdialog.h"
 
 CToDoList::CToDoList()
 {
@@ -116,14 +117,24 @@ void CToDoList::onEdit()
     QModelIndex index = m_pwOngoing->currentIndex();
     if (index.isValid())
     {
-        bool ok;
-        QString text = QInputDialog::getText(this, tr("Edit Task"),
-                                             tr("Task name:"), QLineEdit::Normal,
-                                             m_pwOngoing->model()->data(index, Qt::DisplayRole).toString(), &ok);
-        if (ok && !text.isEmpty())
-        {
-            m_pwOngoing->model()->setData(index, text, Qt::EditRole);
-        }
+        // Get the current task's data
+        QString taskName = m_pwOngoing->model()->data(index, Qt::DisplayRole).toString();
+        Task currentTask = m_pwOngoing->model()->data(index, Qt::UserRole).value<Task>();
+
+        // Create and set up the edit dialog
+        TaskEditDialog editDialog(this); // $
+        editDialog.setTask(currentTask); // $
+
+        // Connect the dialog's taskEdited signal to a slot that updates the task in the model
+        connect(&editDialog, &TaskEditDialog::taskEdited, this, [=](const Task &updatedTask) { // $
+            // Update the model data with the modified task
+            m_pwOngoing->model()->setData(index, updatedTask.taskName, Qt::DisplayRole);
+            m_pwOngoing->model()->setData(index, QVariant::fromValue(updatedTask), Qt::UserRole);
+        });
+
+        // Show the edit dialog
+        editDialog.exec();
     }
 }
+
 

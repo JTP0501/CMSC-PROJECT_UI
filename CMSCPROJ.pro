@@ -12,11 +12,13 @@ SOURCES += \
     console.cpp \
     customstringlistmodel.cpp \
     main.cpp \
+    taskeditdialog.cpp \
     todolist.cpp
 
 HEADERS += \
     console.h \
     customstringlistmodel.h \
+    taskeditdialog.h \
     todolist.h
 
 FORMS += \
