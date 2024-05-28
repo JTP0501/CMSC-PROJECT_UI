@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>1add_btn.png</file>
+        <file>2trash_btn.png</file>
+        <file>3edit_btn.png</file>
+    </qresource>
+</RCC>
