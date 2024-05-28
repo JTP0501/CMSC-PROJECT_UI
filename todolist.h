@@ -7,6 +7,8 @@
 #include <QAction>
 #include <QEvent>
 #include "console.h"
+#include "customstringlistmodel.h"
+
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -29,16 +31,12 @@ protected slots:
 private:
     QListView* m_pwOngoing = nullptr;
     QListView* m_pwWaitlisted = nullptr;
-    QStringListModel* m_taskModelOngoing = nullptr;
-    QStringListModel* m_taskModelWaitlisted = nullptr;
 
     Console* m_console;
 
     QAction* m_pActAdd = nullptr;
     QAction* m_pActRemove = nullptr;
     QAction* m_pActEdit = nullptr;
-
 };
-
 
 #endif // TODOLIST_H

@@ -10,11 +10,13 @@ CONFIG += c++17
 
 SOURCES += \
     console.cpp \
+    customstringlistmodel.cpp \
     main.cpp \
     todolist.cpp
 
 HEADERS += \
     console.h \
+    customstringlistmodel.h \
     todolist.h
 
 FORMS += \

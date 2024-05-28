@@ -4,6 +4,7 @@
 #include <QToolBar>
 #include <QBoxLayout>
 #include <QInputDialog>
+#include "customstringlistmodel.h"
 
 CToDoList::CToDoList()
 {
@@ -54,12 +55,9 @@ CToDoList::CToDoList()
     m_pwWaitlisted->setDefaultDropAction(Qt::MoveAction);
     pHLayout->addWidget(m_pwWaitlisted);
 
-    m_taskModelOngoing = new QStringListModel(this);
-    m_taskModelWaitlisted = new QStringListModel(this);
-
-    m_pwOngoing->setModel(m_taskModelOngoing);
-    m_pwWaitlisted->setModel(m_taskModelWaitlisted);
-
+    // Use CustomStringListModel
+    m_pwOngoing->setModel(new CustomStringListModel);
+    m_pwWaitlisted->setModel(new CustomStringListModel);
 
     m_pwOngoing->setStyleSheet
         ("QListView { font-size: 15pt; font-weight: bold; }"
@@ -96,11 +94,12 @@ CToDoList::CToDoList()
     m_console = new Console(this);
     pMainLayout->addWidget(m_console);
 }
+
 // SLOTS
 void CToDoList::onAdd()
 {
-    m_taskModelOngoing->insertRow(m_taskModelOngoing->rowCount());
-    QModelIndex oIndex = m_taskModelOngoing->index(m_taskModelOngoing->rowCount() - 1, 0);
+    m_pwOngoing->model()->insertRow(m_pwOngoing->model()->rowCount());
+    QModelIndex oIndex = m_pwOngoing->model()->index(m_pwOngoing->model()->rowCount() - 1, 0);
     m_pwOngoing->edit(oIndex);
 }
 
@@ -108,7 +107,7 @@ void CToDoList::onRemove()
 {
     QModelIndex index = m_pwOngoing->currentIndex();
     if (index.isValid()) {
-        m_taskModelOngoing->removeRow(index.row());
+        m_pwOngoing->model()->removeRow(index.row());
     }
 }
 
@@ -120,10 +119,10 @@ void CToDoList::onEdit()
         bool ok;
         QString text = QInputDialog::getText(this, tr("Edit Task"),
                                              tr("Task name:"), QLineEdit::Normal,
-                                             m_taskModelOngoing->data(index, Qt::DisplayRole).toString(), &ok);
+                                             m_pwOngoing->model()->data(index, Qt::DisplayRole).toString(), &ok);
         if (ok && !text.isEmpty())
         {
-            m_taskModelOngoing->setData(index, text, Qt::EditRole);
+            m_pwOngoing->model()->setData(index, text, Qt::EditRole);
         }
     }
 }
