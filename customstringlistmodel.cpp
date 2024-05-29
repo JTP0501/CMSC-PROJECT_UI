@@ -76,3 +76,14 @@ bool CustomStringListModel::dropMimeData(const QMimeData *data, Qt::DropAction a
 
     return true;
 }
+
+void CustomStringListModel::addTask(const Task& task)
+{
+    // Convert the Task object to a QString representation
+    QString taskString = task.taskName + " - " + task.semester + " - " + task.course;
+
+    // Insert the QString representation into the model
+    insertRow(rowCount());
+    setData(index(rowCount() - 1), taskString);
+}
+

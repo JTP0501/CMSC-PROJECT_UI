@@ -4,6 +4,9 @@
 #include <QToolBar>
 #include <QBoxLayout>
 #include <QInputDialog>
+#include <QFile>
+#include <QDir>
+#include <QStandardPaths>
 #include "customstringlistmodel.h"
 #include "taskeditdialog.h"
 
@@ -47,6 +50,54 @@ CToDoList::CToDoList()
     // Main horizontal layout to hold the lists
     QHBoxLayout* pHLayout = new QHBoxLayout();
     pMainLayout->addLayout(pHLayout);
+
+    QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation); // Get desktop path
+    QString folderName = "theta_files"; // Define folder name
+    QString folderPath = desktopPath + "/" + folderName + "/"; // Define folder path
+
+    // Check if folder exists
+    if (!QDir().exists(folderPath))
+    {
+        // Create the folder if it doesn't exist
+        QDir().mkpath(folderPath);
+    }
+
+    // File paths for ongoing and waitlisted tasks (within the theta_files folder)
+    ongoingFilePath = folderPath + "ongoing_tasks.bin";
+    waitlistedFilePath = folderPath + "waitlisted_tasks.bin";
+
+    qDebug() << "Theta Files Folder Path:" << folderPath;
+
+    // Check if the files exist
+    if (!QFile::exists(ongoingFilePath))
+    {
+        // Create the file if it doesn't exist
+        QFile file(ongoingFilePath);
+        if (file.open(QIODevice::WriteOnly))
+        {
+            qDebug() << "Created file:" << ongoingFilePath;
+            file.close();
+        }
+        else
+        {
+            qDebug() << "Failed to create file:" << ongoingFilePath;
+        }
+    }
+
+    if (!QFile::exists(waitlistedFilePath))
+    {
+        // Create the file if it doesn't exist
+        QFile file(waitlistedFilePath);
+        if (file.open(QIODevice::WriteOnly))
+        {
+            qDebug() << "Created file:" << waitlistedFilePath;
+            file.close();
+        }
+        else
+        {
+            qDebug() << "Failed to create file:" << waitlistedFilePath;
+        }
+    }
 
     // List views for ongoing and waitlisted tasks
     m_pwOngoing = new QListView(this);
@@ -104,14 +155,35 @@ CToDoList::CToDoList()
     // Add Console
     m_console = new Console(this);
     pMainLayout->addWidget(m_console);
+
+    // Load ongoing and waitlisted tasks from files
+    loadTasks(ongoingFilePath, m_pwOngoing);
+    loadTasks(waitlistedFilePath, m_pwWaitlisted);
 }
 
 // Slot to add a new task
 void CToDoList::onAdd()
 {
+    // Insert a new row into the ongoing list view
     m_pwOngoing->model()->insertRow(m_pwOngoing->model()->rowCount());
+    // Get the index of the newly inserted row
     QModelIndex oIndex = m_pwOngoing->model()->index(m_pwOngoing->model()->rowCount() - 1, 0);
+    // Start editing the new item
     m_pwOngoing->edit(oIndex);
+
+    // Create a new task and populate it with default values
+    Task newTask;
+    // Get the task data from the newly added row
+    newTask.taskName = m_pwOngoing->model()->data(oIndex, Qt::DisplayRole).toString();
+    newTask.semester = "..."; // Default value, will be verified with another file (not implemented yet)
+    newTask.course = "..."; // To be inputted by the user in onEdit function
+    newTask.weight = "..."; // To be inputted by the user in onEdit function
+    newTask.totalScore = 0; // To be inputted by the user in onEdit function
+    newTask.score = -1; // Default value, indicates no score yet
+    newTask.complete = false; // Default value, indicates that user hasn't completed the task yet
+    newTask.index = oIndex.row(); // Index tracker for user in the file (storage)
+    // Append the task data to the ongoing tasks file
+    appendTasks(ongoingFilePath, newTask);
 }
 
 // Slot to remove a task
@@ -147,9 +219,80 @@ void CToDoList::onEdit()
         int result = editDialog.exec();
         if (result == QDialog::Accepted) {
             // Update the task data in the model if the user accepted the changes
-            Task updatedTask = editDialog.getTask(); // <-- This line causes an error because TaskEditDialog doesn't have a method named getTask()
+            Task updatedTask = editDialog.getTask();
+            editDialog.setTask(updatedTask);
             m_pwOngoing->model()->setData(index, QVariant::fromValue(updatedTask), Qt::UserRole);
         }
     }
 }
 
+
+void CToDoList::appendTasks(const QString& fileName, const Task& task)
+{
+    QFile file(fileName);
+    if (file.open(QIODevice::Append)) { // Open file in Append mode to add new tasks
+        QDataStream out(&file);
+
+        // Write task data to the file
+        out << task.taskName << task.semester << task.course << task.weight << task.totalScore << task.score << task.complete << task.index;
+
+        file.close();
+    }
+}
+
+void CToDoList::readTasks(const QString& fileName)
+{
+    QFile file(fileName);
+    if (file.open(QIODevice::ReadOnly)) {
+        QDataStream in(&file);
+
+        // Read task data from the file
+        Task loadedTask;
+        in >> loadedTask.taskName >> loadedTask.semester >> loadedTask.course >> loadedTask.weight >> loadedTask.totalScore >> loadedTask.score >> loadedTask.complete >> loadedTask.index;
+
+        file.close();
+    }
+}
+
+void CToDoList::loadTasks(const QString& fileName, QListView* listView)
+{
+    QFile file(fileName);
+    if (file.open(QIODevice::ReadOnly)) {
+        QDataStream in(&file);
+
+        // Read and populate tasks until the end of file
+        while (!in.atEnd()) {
+            Task loadedTask;
+            in >> loadedTask.taskName >> loadedTask.semester >> loadedTask.course >> loadedTask.weight >> loadedTask.totalScore >> loadedTask.score >> loadedTask.complete >> loadedTask.index;
+            // Insert loaded task into the list view's model
+            insertTaskIntoModel(loadedTask, listView);
+        }
+
+        file.close();
+    }
+}
+
+void CToDoList::insertTaskIntoModel(const Task& task, QListView* listView)
+{
+    // Create a new model if one doesn't exist
+    if (!listView->model())
+        listView->setModel(new CustomStringListModel);
+
+    // Insert the task into the model
+    CustomStringListModel* model = qobject_cast<CustomStringListModel*>(listView->model());
+    if (model)
+        model->addTask(task);
+}
+/*
+void CToDoList::clearTasks(const QString& fileName)
+{
+    QFile file(fileName);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        // Truncate the file to clear its content
+        file.close();
+        qDebug() << "Cleared tasks in file:" << fileName;
+    } else {
+        qDebug() << "Failed to clear tasks in file:" << fileName;
+    }
+}
+*/

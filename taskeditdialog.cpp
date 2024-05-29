@@ -69,3 +69,10 @@ void TaskEditDialog::saveTask()
     // Close the dialog
     accept();
 }
+
+
+Task TaskEditDialog::getTask() const
+{
+    // Collect data from UI elements into m_task
+    return m_task;
+}

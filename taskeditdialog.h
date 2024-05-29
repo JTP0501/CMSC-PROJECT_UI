@@ -14,6 +14,7 @@ class TaskEditDialog : public QDialog // Define TaskEditDialog class inheriting 
 public:
     TaskEditDialog(QWidget *parent = nullptr); // Constructor declaration
     void setTask(const Task &task); // Function to set the task data in the dialog
+    Task getTask() const; // Function to get the task data in the dialog
 
 signals:
     void taskEdited(const Task &task); // Signal emitted when the task is edited and saved
@@ -27,6 +28,8 @@ private:
     QLineEdit *m_courseLineEdit; // Pointer to QLineEdit for course input
     QLineEdit *m_weightLineEdit; // Pointer to QLineEdit for weight input
     QDoubleSpinBox *m_totalScoreSpinBox; // Pointer to QDoubleSpinBox for total score input
+
+    Task m_task;  // Declare m_task as a member variable
 };
 
 #endif // TASKEDITDIALOG_H

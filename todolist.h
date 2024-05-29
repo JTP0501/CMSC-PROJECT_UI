@@ -27,6 +27,11 @@ protected slots: // Declare slots for handling events
     void onAdd(); // Slot to handle adding an item
     void onRemove(); // Slot to handle removing an item
     void onEdit(); // Slot to handle editing an item
+    void appendTasks(const QString& fileName, const Task& task);
+    void readTasks(const QString& fileName);
+    void loadTasks(const QString& fileName, QListView* listView);
+    void insertTaskIntoModel(const Task& task, QListView* listView);
+    //void clearTasks(const QString& fileName);
 
 private:
     QListView* m_pwOngoing = nullptr; // Pointer to the ongoing task list view
@@ -37,6 +42,9 @@ private:
     QAction* m_pActAdd = nullptr; // Pointer to the action for adding a task
     QAction* m_pActRemove = nullptr; // Pointer to the action for removing a task
     QAction* m_pActEdit = nullptr; // Pointer to the action for editing a task
+
+    QString ongoingFilePath;
+    QString waitlistedFilePath;
 };
 
 #endif // TODOLIST_H

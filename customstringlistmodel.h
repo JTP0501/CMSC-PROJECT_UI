@@ -14,6 +14,7 @@ struct Task {
     double totalScore;
     double score;
     bool complete;
+    int index;
 };
 
 class CustomStringListModel : public QStringListModel // Define CustomStringListModel class inheriting from QStringListModel
@@ -31,7 +32,7 @@ public:
     bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) override;
 
     // Custom functions to interact with tasks
-    void addTask(const Task &task); // Function to add a task to the model
+    void addTask(const Task& task); // Function to add a task to the model
     void removeTask(int index); // Function to remove a task from the model
     Task getTask(int index) const; // Function to retrieve a task from the model
 
