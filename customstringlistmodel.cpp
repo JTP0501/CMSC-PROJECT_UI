@@ -99,5 +99,3 @@ void CustomStringListModel::removeTask(int row)
         m_tasks[i].index = i; // Update index to match row (starting from 0)
     }
 }
-
-

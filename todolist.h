@@ -3,17 +3,14 @@
 
 #include <QMainWindow>
 #include <QListView>
-#include <QStringListModel>
 #include <QAction>
-#include <QEvent>
-#include "console.h"
+#include <QString>
+#include "console.h" // Ensure you have the correct path to Console class
 
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class ToDoList;
-}
-QT_END_NAMESPACE
+// Forward declaration of Task
+struct Task;
 
+// CToDoList class definition
 class CToDoList : public QMainWindow
 {
     Q_OBJECT
@@ -21,37 +18,29 @@ class CToDoList : public QMainWindow
 public:
     CToDoList();
 
-<<<<<<< Updated upstream
-protected slots:
+private slots:
     void onAdd();
     void onRemove();
     void onEdit();
-=======
-protected slots: // Declare slots for handling events
-    void onAdd(); // Slot to handle adding an item
-    void onRemove(); // Slot to handle removing an item
-    void onEdit(); // Slot to handle editing an item
+
+private:
     void appendTasks(const QString& fileName, const Task& task);
     void loadTasks(const QString& fileName, QListView* listView);
     void insertTaskIntoModel(const Task& task, QListView* listView);
     void clearTasks(const QString& fileName);
     void updateTaskIndexes(const QString& fileName);
-    //Task findTaskByName(const QString& fileName, const QString& taskName);
->>>>>>> Stashed changes
 
-private:
-    QListView* m_pwOngoing = nullptr;
-    QListView* m_pwWaitlisted = nullptr;
-    QStringListModel* m_taskModelOngoing = nullptr;
-    QStringListModel* m_taskModelWaitlisted = nullptr;
+    QListView* m_pwOngoing; // List view for ongoing tasks
+    QListView* m_pwWaitlisted; // List view for waitlisted tasks
 
-    Console* m_console;
+    QAction* m_pActAdd; // Action to add tasks
+    QAction* m_pActRemove; // Action to remove tasks
+    QAction* m_pActEdit; // Action to edit tasks
 
-    QAction* m_pActAdd = nullptr;
-    QAction* m_pActRemove = nullptr;
-    QAction* m_pActEdit = nullptr;
+    Console* m_console; // Console widget
 
+    QString ongoingFilePath; // Path to the ongoing tasks file
+    QString waitlistedFilePath; // Path to the waitlisted tasks file
 };
-
 
 #endif // TODOLIST_H

@@ -4,15 +4,23 @@
 #include <QToolBar>
 #include <QBoxLayout>
 #include <QInputDialog>
+#include <QFile>
+#include <QDir>
+#include <QStandardPaths>
+#include "customstringlistmodel.h"
+#include "taskeditdialog.h"
 
 CToDoList::CToDoList()
 {
+    // Create the main widget
     QWidget* pWidget = new QWidget(this);
     pWidget->setStyleSheet("background-color: #ECF0F1");
     setCentralWidget(pWidget);
 
+    // Set window title
     setWindowTitle("Theta(θ): Task Handling and Evaluation Tracking Application");
 
+    // Create the main layout
     QVBoxLayout* pMainLayout = new QVBoxLayout();
     pWidget->setLayout(pMainLayout);
 
@@ -20,14 +28,17 @@ CToDoList::CToDoList()
     QHBoxLayout* pHeaderLayout = new QHBoxLayout();
     pMainLayout->addLayout(pHeaderLayout);
 
+    // Title label
     QLabel* pwTitle = new QLabel("To Do List", this);
     pHeaderLayout->addWidget(pwTitle, 0, Qt::AlignCenter);
     pwTitle->setAlignment(Qt::AlignCenter);
     pwTitle->setStyleSheet("font-size: 30pt; margin: 10%");
 
+    // Horizontal layout for labels
     QHBoxLayout* pHLayoutLabels = new QHBoxLayout();
     pMainLayout->addLayout(pHLayoutLabels);
 
+    // Labels for ongoing and waitlisted tasks
     QLabel* plblOngoing = new QLabel("Ongoing", this);
     plblOngoing->setStyleSheet("font-size: 15pt;");
     pHLayoutLabels->addWidget(plblOngoing);
@@ -40,6 +51,55 @@ CToDoList::CToDoList()
     QHBoxLayout* pHLayout = new QHBoxLayout();
     pMainLayout->addLayout(pHLayout);
 
+    QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation); // Get desktop path
+    QString folderName = "theta_files"; // Define folder name
+    QString folderPath = desktopPath + "/" + folderName + "/"; // Define folder path
+
+    // Check if folder exists
+    if (!QDir().exists(folderPath))
+    {
+        // Create the folder if it doesn't exist
+        QDir().mkpath(folderPath);
+    }
+
+    // File paths for ongoing and waitlisted tasks (within the theta_files folder)
+    ongoingFilePath = folderPath + "ongoing_tasks.bin";
+    waitlistedFilePath = folderPath + "waitlisted_tasks.bin";
+
+    qDebug() << "Theta Files Folder Path:" << folderPath;
+
+    // Check if the files exist
+    if (!QFile::exists(ongoingFilePath))
+    {
+        // Create the file if it doesn't exist
+        QFile file(ongoingFilePath);
+        if (file.open(QIODevice::WriteOnly))
+        {
+            qDebug() << "Created file:" << ongoingFilePath;
+            file.close();
+        }
+        else
+        {
+            qDebug() << "Failed to create file:" << ongoingFilePath;
+        }
+    }
+
+    if (!QFile::exists(waitlistedFilePath))
+    {
+        // Create the file if it doesn't exist
+        QFile file(waitlistedFilePath);
+        if (file.open(QIODevice::WriteOnly))
+        {
+            qDebug() << "Created file:" << waitlistedFilePath;
+            file.close();
+        }
+        else
+        {
+            qDebug() << "Failed to create file:" << waitlistedFilePath;
+        }
+    }
+
+    // List views for ongoing and waitlisted tasks
     m_pwOngoing = new QListView(this);
     m_pwOngoing->setDragEnabled(true);
     m_pwOngoing->setAcceptDrops(true);
@@ -54,28 +114,28 @@ CToDoList::CToDoList()
     m_pwWaitlisted->setDefaultDropAction(Qt::MoveAction);
     pHLayout->addWidget(m_pwWaitlisted);
 
-    m_taskModelOngoing = new QStringListModel(this);
-    m_taskModelWaitlisted = new QStringListModel(this);
+    // Use CustomStringListModel for both list views
+    m_pwOngoing->setModel(new CustomStringListModel);
+    m_pwWaitlisted->setModel(new CustomStringListModel);
 
-    m_pwOngoing->setModel(m_taskModelOngoing);
-    m_pwWaitlisted->setModel(m_taskModelWaitlisted);
+    // Set stylesheets for list views
+    m_pwOngoing->setStyleSheet(
+        "QListView { font-size: 15pt; font-weight: bold; }"
+        "QListView::item { background-color: #E74C3C; padding: 5%;"
+        "border: 1px solid #C0392B; border-radius: 10px; margin-top: 2.5px; margin-bottom: 2.5px; }"
+        "QListView::item::hover { background-color: #D44233 }");
 
+    m_pwWaitlisted->setStyleSheet(
+        "QListView { font-size: 15pt; font-weight: bold; }"
+        "QListView::item { background-color: #2ECC71; padding: 5%;"
+        "border: 1px solid #27AE60; border-radius: 10px; margin-top: 2.5px; margin-bottom: 2.5px; }"
+        "QListView::item::hover { background-color: #25A85D }");
 
-    m_pwOngoing->setStyleSheet
-        ("QListView { font-size: 15pt; font-weight: bold; }"
-         "QListView::item { background-color: #E74C3C; padding: 5%;"
-         "border: 1px solid #C0392B; border-radius: 10px; margin-top: 2.5px; margin-bottom: 2.5px; }"
-         "QListView::item::hover { background-color: #D44233 }");
-
-    m_pwWaitlisted->setStyleSheet
-        ("QListView { font-size: 15pt; font-weight: bold; }"
-         "QListView::item { background-color: #2ECC71; padding: 5%;"
-         "border: 1px solid #27AE60; border-radius: 10px; margin-top: 2.5px; margin-bottom: 2.5px; }"
-         "QListView::item::hover { background-color: #25A85D }");
-
+    // Create a toolbar
     QToolBar* pToolBar = new QToolBar(this);
     addToolBar(pToolBar);
 
+    // Add actions to the toolbar for add, remove, and edit operations
     m_pActAdd = new QAction(this);
     m_pActAdd->setIcon(QIcon(":/1add_btn.png"));
     connect(m_pActAdd, &QAction::triggered, this, &CToDoList::onAdd);
@@ -95,8 +155,6 @@ CToDoList::CToDoList()
     // Add Console
     m_console = new Console(this);
     pMainLayout->addWidget(m_console);
-<<<<<<< Updated upstream
-=======
 
     // Clear ongoing tasks file
     // clearTasks(ongoingFilePath);
@@ -105,19 +163,11 @@ CToDoList::CToDoList()
     loadTasks(ongoingFilePath, m_pwOngoing);
     loadTasks(waitlistedFilePath, m_pwWaitlisted);
 
-    // Debugging information
-    qDebug() << "Ongoing tasks loaded:" << qobject_cast<CustomStringListModel*>(m_pwOngoing->model())->rowCount();
-    qDebug() << "Waitlisted tasks loaded:" << qobject_cast<CustomStringListModel*>(m_pwWaitlisted->model())->rowCount();
->>>>>>> Stashed changes
 }
-// SLOTS
+
+// Slot to add a new task
 void CToDoList::onAdd()
 {
-<<<<<<< Updated upstream
-    m_taskModelOngoing->insertRow(m_taskModelOngoing->rowCount());
-    QModelIndex oIndex = m_taskModelOngoing->index(m_taskModelOngoing->rowCount() - 1, 0);
-    m_pwOngoing->edit(oIndex);
-=======
     // Prompt the user for the task name
     QString taskName = QInputDialog::getText(this, "Add Task", "Enter task name:");
 
@@ -145,16 +195,13 @@ void CToDoList::onAdd()
             appendTasks(ongoingFilePath, newTask);
         }
     }
->>>>>>> Stashed changes
 }
 
+// Slot to remove a task
 void CToDoList::onRemove()
 {
     QModelIndex index = m_pwOngoing->currentIndex();
     if (index.isValid()) {
-<<<<<<< Updated upstream
-        m_taskModelOngoing->removeRow(index.row());
-=======
         // Retrieve the model from the ongoing list view
         CustomStringListModel* model = qobject_cast<CustomStringListModel*>(m_pwOngoing->model());
         if (model) {
@@ -164,24 +211,15 @@ void CToDoList::onRemove()
             // Update indexes in the file
             updateTaskIndexes(ongoingFilePath);
         }
->>>>>>> Stashed changes
     }
 }
 
+// Slot to edit a task
 void CToDoList::onEdit()
 {
     QModelIndex index = m_pwOngoing->currentIndex();
     if (index.isValid())
     {
-<<<<<<< Updated upstream
-        bool ok;
-        QString text = QInputDialog::getText(this, tr("Edit Task"),
-                                             tr("Task name:"), QLineEdit::Normal,
-                                             m_taskModelOngoing->data(index, Qt::DisplayRole).toString(), &ok);
-        if (ok && !text.isEmpty())
-        {
-            m_taskModelOngoing->setData(index, text, Qt::EditRole);
-=======
         // Get the current task's data
         QString taskName = m_pwOngoing->model()->data(index, Qt::DisplayRole).toString();
         Task currentTask = m_pwOngoing->model()->data(index, Qt::UserRole).value<Task>();
@@ -205,13 +243,10 @@ void CToDoList::onEdit()
             // Save the edited task back to your data structure or file
             // Update the task with the edited values
             // m_pwOngoing->model()->setData(index, QVariant::fromValue(editedTask), Qt::UserRole);
->>>>>>> Stashed changes
         }
     }
 }
 
-<<<<<<< Updated upstream
-=======
 void CToDoList::appendTasks(const QString& fileName, const Task& task)
 {
     QFile file(fileName);
@@ -327,4 +362,3 @@ Task CToDoList::findTaskByName(const QString& fileName, const QString& taskName)
 }
 
 */
->>>>>>> Stashed changes
