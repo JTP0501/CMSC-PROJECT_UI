@@ -156,34 +156,45 @@ CToDoList::CToDoList()
     m_console = new Console(this);
     pMainLayout->addWidget(m_console);
 
+    // Clear ongoing tasks file
+    // clearTasks(ongoingFilePath);
+
     // Load ongoing and waitlisted tasks from files
     loadTasks(ongoingFilePath, m_pwOngoing);
     loadTasks(waitlistedFilePath, m_pwWaitlisted);
+
 }
 
 // Slot to add a new task
 void CToDoList::onAdd()
 {
-    // Insert a new row into the ongoing list view
-    m_pwOngoing->model()->insertRow(m_pwOngoing->model()->rowCount());
-    // Get the index of the newly inserted row
-    QModelIndex oIndex = m_pwOngoing->model()->index(m_pwOngoing->model()->rowCount() - 1, 0);
-    // Start editing the new item
-    m_pwOngoing->edit(oIndex);
+    // Prompt the user for the task name
+    QString taskName = QInputDialog::getText(this, "Add Task", "Enter task name:");
 
-    // Create a new task and populate it with default values
-    Task newTask;
-    // Get the task data from the newly added row
-    newTask.taskName = m_pwOngoing->model()->data(oIndex, Qt::DisplayRole).toString();
-    newTask.semester = "..."; // Default value, will be verified with another file (not implemented yet)
-    newTask.course = "..."; // To be inputted by the user in onEdit function
-    newTask.weight = "..."; // To be inputted by the user in onEdit function
-    newTask.totalScore = 0; // To be inputted by the user in onEdit function
-    newTask.score = -1; // Default value, indicates no score yet
-    newTask.complete = false; // Default value, indicates that user hasn't completed the task yet
-    newTask.index = oIndex.row(); // Index tracker for user in the file (storage)
-    // Append the task data to the ongoing tasks file
-    appendTasks(ongoingFilePath, newTask);
+    // Check if the user entered a valid task name
+    if (!taskName.isEmpty()) {
+        // Retrieve the model from the ongoing list view
+        CustomStringListModel* model = qobject_cast<CustomStringListModel*>(m_pwOngoing->model());
+        if (model) {
+            // Create a new task and populate it with default values
+            Task newTask;
+            newTask.taskName = taskName;
+            newTask.semester = "...";
+            newTask.course = "...";
+            newTask.weight = "...";
+            newTask.totalScore = 0;
+            newTask.score = -1;
+            newTask.complete = false;
+            newTask.index = model->rowCount(); // Set index to current row count (starting from 0)
+
+            // Add the task to the model
+            model->addTask(newTask);
+
+            // Append the task data to the ongoing tasks file
+            qDebug() << "I'm appending";
+            appendTasks(ongoingFilePath, newTask);
+        }
+    }
 }
 
 // Slot to remove a task
@@ -191,7 +202,15 @@ void CToDoList::onRemove()
 {
     QModelIndex index = m_pwOngoing->currentIndex();
     if (index.isValid()) {
-        m_pwOngoing->model()->removeRow(index.row());
+        // Retrieve the model from the ongoing list view
+        CustomStringListModel* model = qobject_cast<CustomStringListModel*>(m_pwOngoing->model());
+        if (model) {
+            // Remove the task from the model
+            model->removeTask(index.row());
+
+            // Update indexes in the file
+            updateTaskIndexes(ongoingFilePath);
+        }
     }
 }
 
@@ -205,27 +224,28 @@ void CToDoList::onEdit()
         QString taskName = m_pwOngoing->model()->data(index, Qt::DisplayRole).toString();
         Task currentTask = m_pwOngoing->model()->data(index, Qt::UserRole).value<Task>();
 
-        // Create and set up the edit dialog
+        // Open a dialog to edit the task
         TaskEditDialog editDialog(this);
         editDialog.setTask(currentTask);
 
-        // Connect the dialog's taskEdited signal to a slot that updates the task in the model
-        connect(&editDialog, &TaskEditDialog::taskEdited, this, [=](const Task &updatedTask) {
-            // Update the model data with the modified task
-            m_pwOngoing->model()->setData(index, QVariant::fromValue(updatedTask), Qt::UserRole);
-        });
-
-        // Show the edit dialog
+        // Execute the dialog
         int result = editDialog.exec();
         if (result == QDialog::Accepted) {
-            // Update the task data in the model if the user accepted the changes
-            Task updatedTask = editDialog.getTask();
-            editDialog.setTask(updatedTask);
-            m_pwOngoing->model()->setData(index, QVariant::fromValue(updatedTask), Qt::UserRole);
+            // Get the edited task data from the dialog
+            Task editedTask = editDialog.getTask();
+
+            // Update the task name if it has been changed
+            if (editedTask.taskName != taskName) {
+                // Remove the old task with the original name
+                // Add the edited task with the new name
+            }
+
+            // Save the edited task back to your data structure or file
+            // Update the task with the edited values
+            // m_pwOngoing->model()->setData(index, QVariant::fromValue(editedTask), Qt::UserRole);
         }
     }
 }
-
 
 void CToDoList::appendTasks(const QString& fileName, const Task& task)
 {
@@ -235,20 +255,6 @@ void CToDoList::appendTasks(const QString& fileName, const Task& task)
 
         // Write task data to the file
         out << task.taskName << task.semester << task.course << task.weight << task.totalScore << task.score << task.complete << task.index;
-
-        file.close();
-    }
-}
-
-void CToDoList::readTasks(const QString& fileName)
-{
-    QFile file(fileName);
-    if (file.open(QIODevice::ReadOnly)) {
-        QDataStream in(&file);
-
-        // Read task data from the file
-        Task loadedTask;
-        in >> loadedTask.taskName >> loadedTask.semester >> loadedTask.course >> loadedTask.weight >> loadedTask.totalScore >> loadedTask.score >> loadedTask.complete >> loadedTask.index;
 
         file.close();
     }
@@ -264,8 +270,14 @@ void CToDoList::loadTasks(const QString& fileName, QListView* listView)
         while (!in.atEnd()) {
             Task loadedTask;
             in >> loadedTask.taskName >> loadedTask.semester >> loadedTask.course >> loadedTask.weight >> loadedTask.totalScore >> loadedTask.score >> loadedTask.complete >> loadedTask.index;
-            // Insert loaded task into the list view's model
-            insertTaskIntoModel(loadedTask, listView);
+
+            // Check if the loaded task name is empty
+            if (!loadedTask.taskName.isEmpty()) {
+                // Insert loaded task into the list view's model
+                insertTaskIntoModel(loadedTask, listView);
+            } else {
+                qDebug() << "Empty task name encountered while loading tasks from file:" << fileName;
+            }
         }
 
         file.close();
@@ -274,16 +286,22 @@ void CToDoList::loadTasks(const QString& fileName, QListView* listView)
 
 void CToDoList::insertTaskIntoModel(const Task& task, QListView* listView)
 {
-    // Create a new model if one doesn't exist
+    // Check if the list view has a model set
     if (!listView->model())
-        listView->setModel(new CustomStringListModel);
+    {
+        // If no model is set, create a new CustomStringListModel and set it as the model for the list view
+        CustomStringListModel* model = new CustomStringListModel(listView);
+        listView->setModel(model);
+    }
 
-    // Insert the task into the model
+    // Retrieve the model from the list view
     CustomStringListModel* model = qobject_cast<CustomStringListModel*>(listView->model());
+
+    // Add the task to the model
     if (model)
         model->addTask(task);
 }
-/*
+
 void CToDoList::clearTasks(const QString& fileName)
 {
     QFile file(fileName);
@@ -295,4 +313,52 @@ void CToDoList::clearTasks(const QString& fileName)
         qDebug() << "Failed to clear tasks in file:" << fileName;
     }
 }
+
+void CToDoList::updateTaskIndexes(const QString& fileName)
+{
+    CustomStringListModel* model = qobject_cast<CustomStringListModel*>(m_pwOngoing->model());
+    if (!model) return;
+
+    QFile file(fileName);
+    if (file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        QDataStream out(&file);
+
+        // Update the index of each task based on its position in the model
+        for (int row = 0; row < model->rowCount(); ++row) {
+            QModelIndex index = model->index(row, 0);
+            Task task = model->data(index, Qt::UserRole).value<Task>();
+            task.index = row; // Update index to current row (starting from 0)
+
+            // Write updated task data to the file
+            out << task.taskName << task.semester << task.course << task.weight << task.totalScore << task.score << task.complete << task.index;
+        }
+
+        file.close();
+    }
+}
+
+/*
+Task CToDoList::findTaskByName(const QString& fileName, const QString& taskName){
+    Task foundTask;
+    QFile file(fileName);
+    if (file.open(QIODevice::ReadOnly)) {
+        QDataStream in(&file);
+
+        // Read and compare task names until the end of file
+        while (!in.atEnd()) {
+            Task loadedTask;
+            in >> loadedTask.taskName >> loadedTask.semester >> loadedTask.course >> loadedTask.weight >> loadedTask.totalScore >> loadedTask.score >> loadedTask.complete >> loadedTask.index;
+
+            // If the task name matches, assign it to foundTask and break the loop
+            if (loadedTask.taskName == taskName) {
+                foundTask = loadedTask;
+                break;
+            }
+        }
+
+        file.close();
+    }
+    return foundTask;
+}
+
 */

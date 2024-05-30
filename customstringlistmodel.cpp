@@ -79,11 +79,23 @@ bool CustomStringListModel::dropMimeData(const QMimeData *data, Qt::DropAction a
 
 void CustomStringListModel::addTask(const Task& task)
 {
-    // Convert the Task object to a QString representation
-    QString taskString = task.taskName + " - " + task.semester + " - " + task.course;
-
-    // Insert the QString representation into the model
-    insertRow(rowCount());
-    setData(index(rowCount() - 1), taskString);
+    beginInsertRows(QModelIndex(), rowCount(), rowCount());
+    Task newTask = task;
+    newTask.index = rowCount(); // Set index to the new position (starting from 0)
+    m_tasks.append(newTask);
+    endInsertRows();
 }
 
+void CustomStringListModel::removeTask(int row)
+{
+    if (row < 0 || row >= m_tasks.count()) return;
+
+    beginRemoveRows(QModelIndex(), row, row);
+    m_tasks.removeAt(row);
+    endRemoveRows();
+
+    // Update the indexes of remaining tasks
+    for (int i = row; i < m_tasks.count(); ++i) {
+        m_tasks[i].index = i; // Update index to match row (starting from 0)
+    }
+}

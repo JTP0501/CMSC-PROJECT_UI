@@ -33,7 +33,8 @@ public:
 
     // Custom functions to interact with tasks
     void addTask(const Task& task); // Function to add a task to the model
-    void removeTask(int index); // Function to remove a task from the model
+    void removeTask(int row);
+
     Task getTask(int index) const; // Function to retrieve a task from the model
 
 private:

@@ -1,50 +1,46 @@
 #ifndef TODOLIST_H
 #define TODOLIST_H
 
-#include <QMainWindow> // Include necessary Qt header files
+#include <QMainWindow>
 #include <QListView>
-#include <QStringListModel>
 #include <QAction>
-#include <QEvent>
-#include "console.h" // Include header files for Console and CustomStringListModel
-#include "customstringlistmodel.h"
+#include <QString>
+#include "console.h" // Ensure you have the correct path to Console class
 
-// Forward declaration of Ui namespace
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class ToDoList;
-}
-QT_END_NAMESPACE
+// Forward declaration of Task
+struct Task;
 
-class CToDoList : public QMainWindow // Define CToDoList class inheriting from QMainWindow
+// CToDoList class definition
+class CToDoList : public QMainWindow
 {
-    Q_OBJECT // Add Q_OBJECT macro to enable signals and slots
+    Q_OBJECT
 
 public:
-    CToDoList(); // Constructor declaration
+    CToDoList();
 
-protected slots: // Declare slots for handling events
-    void onAdd(); // Slot to handle adding an item
-    void onRemove(); // Slot to handle removing an item
-    void onEdit(); // Slot to handle editing an item
-    void appendTasks(const QString& fileName, const Task& task);
-    void readTasks(const QString& fileName);
-    void loadTasks(const QString& fileName, QListView* listView);
-    void insertTaskIntoModel(const Task& task, QListView* listView);
-    //void clearTasks(const QString& fileName);
+private slots:
+    void onAdd();
+    void onRemove();
+    void onEdit();
 
 private:
-    QListView* m_pwOngoing = nullptr; // Pointer to the ongoing task list view
-    QListView* m_pwWaitlisted = nullptr; // Pointer to the waitlisted task list view
+    void appendTasks(const QString& fileName, const Task& task);
+    void loadTasks(const QString& fileName, QListView* listView);
+    void insertTaskIntoModel(const Task& task, QListView* listView);
+    void clearTasks(const QString& fileName);
+    void updateTaskIndexes(const QString& fileName);
 
-    Console* m_console; // Pointer to the console widget
+    QListView* m_pwOngoing; // List view for ongoing tasks
+    QListView* m_pwWaitlisted; // List view for waitlisted tasks
 
-    QAction* m_pActAdd = nullptr; // Pointer to the action for adding a task
-    QAction* m_pActRemove = nullptr; // Pointer to the action for removing a task
-    QAction* m_pActEdit = nullptr; // Pointer to the action for editing a task
+    QAction* m_pActAdd; // Action to add tasks
+    QAction* m_pActRemove; // Action to remove tasks
+    QAction* m_pActEdit; // Action to edit tasks
 
-    QString ongoingFilePath;
-    QString waitlistedFilePath;
+    Console* m_console; // Console widget
+
+    QString ongoingFilePath; // Path to the ongoing tasks file
+    QString waitlistedFilePath; // Path to the waitlisted tasks file
 };
 
 #endif // TODOLIST_H
