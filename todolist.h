@@ -21,10 +21,23 @@ class CToDoList : public QMainWindow
 public:
     CToDoList();
 
+<<<<<<< Updated upstream
 protected slots:
     void onAdd();
     void onRemove();
     void onEdit();
+=======
+protected slots: // Declare slots for handling events
+    void onAdd(); // Slot to handle adding an item
+    void onRemove(); // Slot to handle removing an item
+    void onEdit(); // Slot to handle editing an item
+    void appendTasks(const QString& fileName, const Task& task);
+    void loadTasks(const QString& fileName, QListView* listView);
+    void insertTaskIntoModel(const Task& task, QListView* listView);
+    void clearTasks(const QString& fileName);
+    void updateTaskIndexes(const QString& fileName);
+    //Task findTaskByName(const QString& fileName, const QString& taskName);
+>>>>>>> Stashed changes
 
 private:
     QListView* m_pwOngoing = nullptr;
