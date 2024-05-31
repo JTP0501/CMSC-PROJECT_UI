@@ -16,7 +16,7 @@ struct Task {
     double score;
     int complete; // Changed bool to int to store completion status as 0 or 1
 
-    Task() : totalScore(0.0), complete(0), score(0.0) {}
+    Task() : totalScore(0.0), score(0.0), complete(0) {}
 };
 
 class CToDoList : public QMainWindow
