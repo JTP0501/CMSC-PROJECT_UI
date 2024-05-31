@@ -1,46 +1,56 @@
+//todolist.h
+
 #ifndef TODOLIST_H
 #define TODOLIST_H
 
 #include <QMainWindow>
 #include <QListView>
-#include <QAction>
-#include <QString>
-#include "console.h" // Ensure you have the correct path to Console class
+#include <QStringListModel>
+#include "console.h"
 
-// Forward declaration of Task
-struct Task;
+struct Task {
+    QString taskName;
+    QString course;
+    QString weight;
+    double totalScore;
+    double score;
+    bool complete;
+    QString semester;
+    QString year;
+};
 
-// CToDoList class definition
 class CToDoList : public QMainWindow
 {
     Q_OBJECT
 
 public:
     CToDoList();
+    void loadTasksFromFile(const QString& filePath, QStringListModel* model);
+    void addTaskToFile(const Task& task, const QString& filePath);
+    void loadTasksOnStartup();
+    Task searchTaskByName(const QString& taskName, const QString& filePath);
+    void removeTaskByName(const QString& taskName, const QString& filePath);
 
 private slots:
     void onAdd();
     void onRemove();
     void onEdit();
+    void onRefresh();
 
 private:
-    void appendTasks(const QString& fileName, const Task& task);
-    void loadTasks(const QString& fileName, QListView* listView);
-    void insertTaskIntoModel(const Task& task, QListView* listView);
-    void clearTasks(const QString& fileName);
-    void updateTaskIndexes(const QString& fileName);
+    QListView* m_pwOngoing = nullptr;
+    QListView* m_pwWaitlisted = nullptr;
 
-    QListView* m_pwOngoing; // List view for ongoing tasks
-    QListView* m_pwWaitlisted; // List view for waitlisted tasks
+    QAction* m_pActAdd;
+    QAction* m_pActRemove;
+    QAction* m_pActEdit;
+    QAction* m_pActRefresh;
 
-    QAction* m_pActAdd; // Action to add tasks
-    QAction* m_pActRemove; // Action to remove tasks
-    QAction* m_pActEdit; // Action to edit tasks
+    Console* m_console;
 
-    Console* m_console; // Console widget
+    QString ongoingFilePath;
+    QString waitlistedFilePath;
 
-    QString ongoingFilePath; // Path to the ongoing tasks file
-    QString waitlistedFilePath; // Path to the waitlisted tasks file
 };
 
 #endif // TODOLIST_H

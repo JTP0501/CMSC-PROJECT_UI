@@ -1,11 +1,10 @@
 #ifndef CUSTOMSTRINGLISTMODEL_H
 #define CUSTOMSTRINGLISTMODEL_H
 
-#include <QStringListModel> // Include QStringListModel for the base class
-#include <QMimeData> // Include QMimeData for handling drag-and-drop operations
-#include <QList> // Include QList for storing tasks
+#include <QStringListModel>
+#include <QMimeData>
+#include <QList>
 
-// Define a struct to represent a task
 struct Task {
     QString taskName;
     QString semester;
@@ -14,31 +13,30 @@ struct Task {
     double totalScore;
     double score;
     bool complete;
-    int index;
 };
 
-class CustomStringListModel : public QStringListModel // Define CustomStringListModel class inheriting from QStringListModel
+class CustomStringListModel : public QStringListModel
 {
-    Q_OBJECT // Add Q_OBJECT macro to enable signals and slots
+    Q_OBJECT
 
 public:
-    explicit CustomStringListModel(QObject *parent = nullptr); // Constructor declaration
+    explicit CustomStringListModel(QObject *parent = nullptr);
 
-    // Overridden functions for drag-and-drop functionality
+    // Override functions for drag and drop support
     Qt::ItemFlags flags(const QModelIndex &index) const override;
     Qt::DropActions supportedDropActions() const override;
     QStringList mimeTypes() const override;
     QMimeData* mimeData(const QModelIndexList &indexes) const override;
     bool dropMimeData(const QMimeData *data, Qt::DropAction action, int row, int column, const QModelIndex &parent) override;
 
-    // Custom functions to interact with tasks
-    void addTask(const Task& task); // Function to add a task to the model
+    // Task management functions
+    void addTask(const Task& task);
     void removeTask(int row);
 
-    Task getTask(int index) const; // Function to retrieve a task from the model
+    Task getTask(int index) const;
 
 private:
-    QList<Task> m_tasks; // List to store tasks
+    QList<Task> m_tasks; // List to hold tasks
 };
 
 #endif // CUSTOMSTRINGLISTMODEL_H

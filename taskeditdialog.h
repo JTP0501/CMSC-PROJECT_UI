@@ -1,35 +1,52 @@
 #ifndef TASKEDITDIALOG_H
 #define TASKEDITDIALOG_H
 
-#include <QDialog> // Include necessary Qt header files
-#include "customstringlistmodel.h" // Include the header file where Task is defined
+#include <QDialog>
+#include "todolist.h" // Include the header file where Task is defined
 
-class QLineEdit; // Forward declaration of QLineEdit class
-class QDoubleSpinBox; // Forward declaration of QDoubleSpinBox class
+class QLineEdit;
+class QDoubleSpinBox;
 
-class TaskEditDialog : public QDialog // Define TaskEditDialog class inheriting from QDialog
+class TaskEditDialog : public QDialog
 {
-    Q_OBJECT // Add Q_OBJECT macro to enable signals and slots
+    Q_OBJECT
 
 public:
-    TaskEditDialog(QWidget *parent = nullptr); // Constructor declaration
-    void setTask(const Task &task); // Function to set the task data in the dialog
-    Task getTask() const; // Function to get the task data in the dialog
-
-signals:
-    void taskEdited(const Task &task); // Signal emitted when the task is edited and saved
+    TaskEditDialog(QWidget *parent = nullptr);
+    void setTaskEdit(const Task &task);
+    Task getTaskEdit() const;
 
 private slots:
-    void saveTask(); // Slot to handle saving the edited task
+    void saveTaskEdit();
 
 private:
-    QLineEdit *m_taskNameLineEdit; // Pointer to QLineEdit for task name input
-    QLineEdit *m_semesterLineEdit; // Pointer to QLineEdit for semester input
-    QLineEdit *m_courseLineEdit; // Pointer to QLineEdit for course input
-    QLineEdit *m_weightLineEdit; // Pointer to QLineEdit for weight input
-    QDoubleSpinBox *m_totalScoreSpinBox; // Pointer to QDoubleSpinBox for total score input
+    void setupEditUI();
 
-    Task m_task;  // Declare m_task as a member variable
+    QLineEdit *m_taskNameLineEdit;
+    QLineEdit *m_courseLineEdit;
+    QLineEdit *m_weightLineEdit;
+    QDoubleSpinBox *m_totalScoreSpinBox;
+};
+
+class TaskAddDialog : public QDialog
+{
+    Q_OBJECT
+
+public:
+    TaskAddDialog(QWidget *parent = nullptr);
+    void setTaskAdd(const Task &task);
+    Task getTaskAdd() const;
+
+private slots:
+    void saveTaskAdd();
+
+private:
+    void setupAddUI();
+
+    QLineEdit *m_taskNameLineEdit;
+    QLineEdit *m_courseLineEdit;
+    QLineEdit *m_weightLineEdit;
+    QDoubleSpinBox *m_totalScoreSpinBox;
 };
 
 #endif // TASKEDITDIALOG_H
