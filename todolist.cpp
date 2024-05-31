@@ -182,8 +182,9 @@ void CToDoList::onAdd()
         QString verifiedTaskName = verifyTaskName(newTask.taskName, tasksFilePath);
         newTask.taskName = verifiedTaskName;
 
-        // Set complete to false for new tasks
-        newTask.complete = false;
+        // Set complete to 0 for new tasks
+        newTask.complete = 0;
+        newTask.score = 0.0;
 
         // Adding the task name to the ongoing list view
         static_cast<QStringListModel*>(m_pwOngoing->model())->insertRow(m_pwOngoing->model()->rowCount());
@@ -216,59 +217,67 @@ void CToDoList::onRemove()
 void CToDoList::onEdit()
 {
     QModelIndex index = m_pwOngoing->currentIndex();
-    if (index.isValid())
-    {
+    if (!index.isValid()) {
+        index = m_pwWaitlisted->currentIndex();
+    }
+
+    if (index.isValid()) {
         QString taskName = index.data(Qt::DisplayRole).toString();
 
         // Search for the task by name in the ongoing tasks file
         Task currentTask = searchTaskByName(taskName, tasksFilePath);
-        if (currentTask.taskName.isEmpty())
-        {
+        if (currentTask.taskName.isEmpty()) {
             qDebug() << "Task not found.";
             return;
         }
 
-        // Create and configure the dialog for editing mode
-        TaskEditDialog editDialog(this);
-        editDialog.setWindowTitle("Edit Task");
-        editDialog.setTaskEdit(currentTask);
+        if (currentTask.complete) {
+            // Show the TaskEditScoreDialog if the task is waitlisted
+            TaskEditScoreDialog editScoreDialog(this);
+            editScoreDialog.setTotalScore(currentTask.totalScore);
+            editScoreDialog.setScore(currentTask.score);
 
-        if (editDialog.exec() == QDialog::Accepted)
-        {
-            // Get the edited task from the dialog
-            Task editedTask = editDialog.getTaskEdit();
+            if (editScoreDialog.exec() == QDialog::Accepted) {
+                // Get the edited score from the dialog
+                double editedScore = editScoreDialog.getScore();
+                currentTask.score = editedScore;
 
-            // Check if the task name has been modified
-            if (taskName != editedTask.taskName)
-            {
-                // Verify the new task name to ensure it's unique
-                QString verifiedTaskName = verifyTaskName(editedTask.taskName, tasksFilePath);
-                editedTask.taskName = verifiedTaskName;
-            }
-
-            // Perform validation of the edited task
-            if (!editedTask.taskName.isEmpty() && !editedTask.course.isEmpty() &&
-                editedTask.totalScore >= 0 && !editedTask.weight.isEmpty())
-            {
-                // Update the model with the edited task name
-                static_cast<QStringListModel*>(m_pwOngoing->model())->setData(index, editedTask.taskName);
-
-                // Remove the old task from the file
-                removeTaskByName(taskName, tasksFilePath);
-
-                // Add the edited task to the file
-                addTaskToFile(editedTask, tasksFilePath);
+                // Update the task in the file
+                updateTaskInFile(currentTask, tasksFilePath);
 
                 // Refresh the list of tasks from the file
                 loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 1);
                 loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 0);
             }
-            else
-            {
-                qDebug() << "Invalid task data. Changes not saved.";
+        } else {
+            // Existing logic for editing tasks that are not waitlisted
+            TaskEditDialog editDialog(this);
+            editDialog.setWindowTitle("Edit Task");
+            editDialog.setTaskEdit(currentTask);
+
+            if (editDialog.exec() == QDialog::Accepted) {
+                // Get the edited task from the dialog
+                Task editedTask = editDialog.getTaskEdit();
+
+                if (taskName != editedTask.taskName) {
+                    QString verifiedTaskName = verifyTaskName(editedTask.taskName, tasksFilePath);
+                    editedTask.taskName = verifiedTaskName;
+                }
+
+                if (!editedTask.taskName.isEmpty() && !editedTask.course.isEmpty() &&
+                    editedTask.totalScore >= 0 && !editedTask.weight.isEmpty()) {
+                    static_cast<QStringListModel*>(m_pwOngoing->model())->setData(index, editedTask.taskName);
+
+                    removeTaskByName(taskName, tasksFilePath);
+                    addTaskToFile(editedTask, tasksFilePath);
+
+                    loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 1);
+                    loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 0);
+                } else {
+                    qDebug() << "Invalid task data. Changes not saved.";
+                }
             }
         }
-        // If canceled, do nothing
     }
 }
 
@@ -335,7 +344,12 @@ void CToDoList::addTaskToFile(const Task &task, const QString &filePath)
         QTextStream out(&file);
 
         // Write the task details to the file in CSV format, including the completion status as an integer
-        out << task.taskName << "," << task.course << "," << task.weight << "," << task.totalScore << "," << (task.complete ? 1 : 0) << "\n";
+        out << task.taskName << ","
+            << task.course << ","
+            << task.weight << ","
+            << task.totalScore << ","
+            << (task.complete ? 1 : 0) << ","
+            << task.score << "\n";
 
         // Close the file
         file.close();
@@ -365,14 +379,15 @@ Task CToDoList::searchTaskByName(const QString& taskName, const QString& filePat
                 // Add this line for debugging
                 qDebug() << "taskDetails size:" << taskDetails.size();
 
-                if (taskDetails.size() >= 4 && taskDetails.first() == taskName)
+                if (taskDetails.size() >= 6 && taskDetails.first() == taskName)
                 {
                     Task foundTask;
                     foundTask.taskName = taskDetails.at(0);
                     foundTask.course = taskDetails.at(1);
                     foundTask.weight = taskDetails.at(2);
                     foundTask.totalScore = taskDetails.at(3).toDouble();
-                    // Add checks for other properties here if needed
+                    foundTask.complete = taskDetails.at(4).toInt();
+                    foundTask.score = taskDetails.at(5).toDouble();
                     taskFile.close();
                     return foundTask;
                 }
@@ -471,6 +486,8 @@ void CToDoList::updateTaskInFile(const Task& task, const QString& filePath)
                     {
                         // Update the complete status
                         taskDetails.replace(4, task.complete ? "1" : "0");
+                        // Update the score
+                        taskDetails.replace(5, QString::number(task.score));
                         line = taskDetails.join(",");
                     }
                     out << line << '\n';
@@ -495,7 +512,7 @@ void CToDoList::setTaskCompleteStatus(const QString& taskName, int completeStatu
     {
         // Update the task's complete status
         task.complete = completeStatus;
-
+        qDebug() << "Completion Status: " << task.complete << '\n';
         // Rewrite the task to the file
         updateTaskInFile(task, filePath);
     }
@@ -514,6 +531,7 @@ void CToDoList::onWaitlistedHovered()
 
     // Search for the task by name and update its complete status to 1
     setTaskCompleteStatus(taskName, 1);
+
 }
 
 void CToDoList::onOngoingHovered()

@@ -2,6 +2,7 @@
 #define TASKEDITDIALOG_H
 
 #include <QDialog>
+#include <QLabel>
 #include "todolist.h" // Include the header file where Task is defined
 
 class QLineEdit;
@@ -26,6 +27,28 @@ private:
     QLineEdit *m_courseLineEdit;
     QLineEdit *m_weightLineEdit;
     QDoubleSpinBox *m_totalScoreSpinBox;
+};
+
+class TaskEditScoreDialog : public QDialog
+{
+    Q_OBJECT
+
+public:
+    TaskEditScoreDialog(QWidget *parent = nullptr);
+
+    void setTotalScore(double totalScore);
+    double getScore() const;
+    void setScore(double score);
+
+private slots:
+    void saveTaskEdit();
+
+private:
+    void setupScoreUI();
+
+    QDoubleSpinBox *m_scoreSpinBox;
+    QLabel *m_totalScoreLabel;  // QLabel to display total score
+    double m_totalScore;
 };
 
 class TaskAddDialog : public QDialog
