@@ -1,19 +1,22 @@
 #include "todolist.h"
+#include "taskeditdialog.h"
+#include "customeventfilter.h"
+
 #include <QLabel>
 #include <QToolBar>
 #include <QBoxLayout>
 #include <QInputDialog>
 #include <QMessageBox>
-
-// File Handling
 #include <QFile>
 #include <QDir>
 #include <QStandardPaths>
 #include <QTemporaryFile>
+#include <QHoverEvent>
+#include <QMimeData>
 
-#include "taskeditdialog.h"
 
-CToDoList::CToDoList()
+CToDoList::CToDoList(QWidget *parent)
+    : QMainWindow(parent), tasksFilePath("") // Initialize tasksFilePath in the constructor initialization list
 {
     // Create the main widget
     QWidget* pWidget = new QWidget(this);
@@ -65,9 +68,8 @@ CToDoList::CToDoList()
         QDir().mkpath(folderPath);
     }
 
-    // File paths for ongoing and waitlisted tasks (within the theta_files folder)
-    ongoingFilePath = folderPath + "ongoing_tasks.bin";
-    waitlistedFilePath = folderPath + "waitlisted_tasks.bin";
+    // File paths for tasks (within the theta_files folder)
+    tasksFilePath = folderPath + "tasks_file.bin";
 
     qDebug() << "Theta Files Folder Path:" << folderPath;
 
@@ -78,37 +80,20 @@ CToDoList::CToDoList()
     }
 
     // Check if the files exist
-    if (!QFile::exists(ongoingFilePath))
+    if (!QFile::exists(tasksFilePath))
     {
         // Create the file if it doesn't exist
-        QFile file(ongoingFilePath);
+        QFile file(tasksFilePath);
         if (file.open(QIODevice::WriteOnly))
         {
-            qDebug() << "Created file:" << ongoingFilePath;
+            qDebug() << "Created file:" << tasksFilePath;
             file.close();
         }
         else
         {
-            qDebug() << "Failed to create file:" << ongoingFilePath;
+            qDebug() << "Failed to create file:" << tasksFilePath;
         }
     }
-
-    if (!QFile::exists(waitlistedFilePath))
-    {
-        // Create the file if it doesn't exist
-        QFile file(waitlistedFilePath);
-        if (file.open(QIODevice::WriteOnly))
-        {
-            qDebug() << "Created file:" << waitlistedFilePath;
-            file.close();
-        }
-        else
-        {
-            qDebug() << "Failed to create file:" << waitlistedFilePath;
-        }
-    }
-
-    qDebug() << "Theta Files Folder Path:" << folderPath;
 
     // List views for ongoing and waitlisted tasks
     m_pwOngoing = new QListView(this);
@@ -173,8 +158,14 @@ CToDoList::CToDoList()
     pMainLayout->addWidget(m_console);
 
     loadTasksOnStartup();
+
+    connect(m_pwOngoing, &QListView::entered, this, &CToDoList::onOngoingHovered);
+    connect(m_pwWaitlisted, &QListView::entered, this, &CToDoList::onWaitlistedHovered);
 }
 
+// TASK MANAGEMENT OPERATIONS
+
+// Slot to add a task
 void CToDoList::onAdd()
 {
     // Prompt the user to add a task
@@ -187,13 +178,20 @@ void CToDoList::onAdd()
         // Getting the task details from the dialog
         Task newTask = addDialog.getTaskAdd();
 
+        // Verify the task name to ensure it's unique
+        QString verifiedTaskName = verifyTaskName(newTask.taskName, tasksFilePath);
+        newTask.taskName = verifiedTaskName;
+
+        // Set complete to false for new tasks
+        newTask.complete = false;
+
         // Adding the task name to the ongoing list view
         static_cast<QStringListModel*>(m_pwOngoing->model())->insertRow(m_pwOngoing->model()->rowCount());
         QModelIndex newIndex = m_pwOngoing->model()->index(m_pwOngoing->model()->rowCount() - 1, 0);
         static_cast<QStringListModel*>(m_pwOngoing->model())->setData(newIndex, newTask.taskName);
 
         // Add Task to File
-        addTaskToFile(newTask,ongoingFilePath);
+        addTaskToFile(newTask,tasksFilePath);
     }
 }
 
@@ -206,13 +204,15 @@ void CToDoList::onRemove()
         QString taskName = index.data(Qt::DisplayRole).toString();
 
         // Remove the task from the file
-        removeTaskByName(taskName, ongoingFilePath);
+        removeTaskByName(taskName, tasksFilePath);
 
         // Reload the tasks from the file
-        loadTasksFromFile(ongoingFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()));
+        loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 1);
+        loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 0);
     }
 }
 
+// Slot to edit a task
 void CToDoList::onEdit()
 {
     QModelIndex index = m_pwOngoing->currentIndex();
@@ -221,7 +221,7 @@ void CToDoList::onEdit()
         QString taskName = index.data(Qt::DisplayRole).toString();
 
         // Search for the task by name in the ongoing tasks file
-        Task currentTask = searchTaskByName(taskName, ongoingFilePath);
+        Task currentTask = searchTaskByName(taskName, tasksFilePath);
         if (currentTask.taskName.isEmpty())
         {
             qDebug() << "Task not found.";
@@ -238,6 +238,14 @@ void CToDoList::onEdit()
             // Get the edited task from the dialog
             Task editedTask = editDialog.getTaskEdit();
 
+            // Check if the task name has been modified
+            if (taskName != editedTask.taskName)
+            {
+                // Verify the new task name to ensure it's unique
+                QString verifiedTaskName = verifyTaskName(editedTask.taskName, tasksFilePath);
+                editedTask.taskName = verifiedTaskName;
+            }
+
             // Perform validation of the edited task
             if (!editedTask.taskName.isEmpty() && !editedTask.course.isEmpty() &&
                 editedTask.totalScore >= 0 && !editedTask.weight.isEmpty())
@@ -246,13 +254,14 @@ void CToDoList::onEdit()
                 static_cast<QStringListModel*>(m_pwOngoing->model())->setData(index, editedTask.taskName);
 
                 // Remove the old task from the file
-                removeTaskByName(taskName, ongoingFilePath);
+                removeTaskByName(taskName, tasksFilePath);
 
                 // Add the edited task to the file
-                addTaskToFile(editedTask, ongoingFilePath);
+                addTaskToFile(editedTask, tasksFilePath);
 
                 // Refresh the list of tasks from the file
-                loadTasksFromFile(ongoingFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()));
+                loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 1);
+                loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 0);
             }
             else
             {
@@ -263,7 +272,22 @@ void CToDoList::onEdit()
     }
 }
 
-void CToDoList::loadTasksFromFile(const QString& filePath, QStringListModel* model)
+// Slot to refresh list of tasks (for accidental replacements)
+void CToDoList::onRefresh()
+{
+    // Reload ongoing tasks (completeStatus = 0)
+    loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 0);
+
+    // Reload waitlisted tasks (completeStatus = 1)
+    loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwWaitlisted->model()), 1);
+
+    // Debugging message
+    qDebug() << "Tasks reloaded from files and complete status updated.";
+}
+
+// FILE OPERATIONS
+
+void CToDoList::loadTasksFromFile(const QString& filePath, QStringListModel* model, bool completeStatus)
 {
     QFile taskFile(filePath);
     if (taskFile.open(QIODevice::ReadOnly | QIODevice::Text))
@@ -273,9 +297,10 @@ void CToDoList::loadTasksFromFile(const QString& filePath, QStringListModel* mod
         while (!in.atEnd())
         {
             QString line = in.readLine();
-            QString taskName = line.split(",", Qt::SkipEmptyParts).first();
-            if (!taskName.isEmpty())
+            QStringList taskDetails = line.split(",", Qt::SkipEmptyParts);
+            if (!taskDetails.isEmpty() && (taskDetails.size() >= 5 && taskDetails[4].toInt() == (completeStatus ? 1 : 0)))
             {
+                QString taskName = taskDetails.first();
                 tasks.append(taskName);
             }
         }
@@ -288,20 +313,15 @@ void CToDoList::loadTasksFromFile(const QString& filePath, QStringListModel* mod
     }
 }
 
-// Slot to refresh list of tasks (for accidental replacements)
-void CToDoList::onRefresh()
-{
-    loadTasksFromFile(ongoingFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()));
-    loadTasksFromFile(waitlistedFilePath, static_cast<QStringListModel*>(m_pwWaitlisted->model()));
-
-    qDebug() << "Tasks reloaded from files.";
-}
-
 void CToDoList::loadTasksOnStartup()
 {
-    loadTasksFromFile(ongoingFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()));
-    loadTasksFromFile(waitlistedFilePath, static_cast<QStringListModel*>(m_pwWaitlisted->model()));
+    // Load ongoing tasks (completeStatus = 0)
+    loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 0);
 
+    // Load waitlisted tasks (completeStatus = 1)
+    loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwWaitlisted->model()), 1);
+
+    // Debugging message
     qDebug() << "Tasks loaded on startup.";
 }
 
@@ -314,8 +334,8 @@ void CToDoList::addTaskToFile(const Task &task, const QString &filePath)
         // Create a QTextStream to write to the file
         QTextStream out(&file);
 
-        // Write the task details to the file in CSV format
-        out << task.taskName << "," << task.course << "," << task.weight << "," << task.totalScore << "\n";
+        // Write the task details to the file in CSV format, including the completion status as an integer
+        out << task.taskName << "," << task.course << "," << task.weight << "," << task.totalScore << "," << (task.complete ? 1 : 0) << "\n";
 
         // Close the file
         file.close();
@@ -395,5 +415,125 @@ void CToDoList::removeTaskByName(const QString& taskName, const QString& filePat
     }
 }
 
+// Utility function to verify the task name has no duplicates
+QString CToDoList::verifyTaskName(const QString& taskName, const QString& filePath)
+{
+    // Open the file in read mode
+    QFile file(filePath);
+    if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+    {
+        QTextStream in(&file);
+        QString newTaskName = taskName;
+        int symbolCount = 1;
 
+        // Check if the task name already exists in the file
+        while (!in.atEnd())
+        {
+            QString line = in.readLine();
+            QStringList taskDetails = line.split(",", Qt::SkipEmptyParts);
+            if (!taskDetails.isEmpty() && taskDetails.first() == newTaskName)
+            {
+                // Append a number in parentheses to differentiate the task name
+                newTaskName = taskName + " (" + QString::number(symbolCount++) + ")";
+            }
+        }
 
+        // Close the file
+        file.close();
+
+        // Return the verified task name
+        return newTaskName;
+    }
+    else
+    {
+        qDebug() << "Failed to open file for reading:" << filePath;
+        return taskName; // Return original task name if file cannot be opened
+    }
+}
+
+void CToDoList::updateTaskInFile(const Task& task, const QString& filePath)
+{
+    QFile inputFile(filePath);
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+        QFile outputFile("tempfile");
+        if (outputFile.open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+            QTextStream in(&inputFile);
+            QTextStream out(&outputFile);
+            while (!in.atEnd())
+            {
+                QString line = in.readLine();
+                if (!line.trimmed().isEmpty()) // Process non-empty lines
+                {
+                    QStringList taskDetails = line.split(",", Qt::SkipEmptyParts);
+                    if (!taskDetails.isEmpty() && taskDetails.first() == task.taskName)
+                    {
+                        // Update the complete status
+                        taskDetails.replace(4, task.complete ? "1" : "0");
+                        line = taskDetails.join(",");
+                    }
+                    out << line << '\n';
+                }
+            }
+            inputFile.close();
+            outputFile.close();
+            inputFile.remove();
+            outputFile.rename(filePath);
+        }
+    }
+}
+
+// TASK STATUS MANAGEMENT
+
+void CToDoList::setTaskCompleteStatus(const QString& taskName, int completeStatus)
+{
+    // Search for the task by name in the appropriate file
+    QString filePath = tasksFilePath;
+    Task task = searchTaskByName(taskName, filePath);
+    if (!task.taskName.isEmpty())
+    {
+        // Update the task's complete status
+        task.complete = completeStatus;
+
+        // Rewrite the task to the file
+        updateTaskInFile(task, filePath);
+    }
+    else
+    {
+        qDebug() << "Task not found in file: " << taskName;
+    }
+}
+
+void CToDoList::onWaitlistedHovered()
+{
+    qDebug() << "Hovered over waitlisted tasks.";
+
+    // Get the task name from the index at the cursor position
+    QString taskName = getTaskNameAtCursor(m_pwWaitlisted);
+
+    // Search for the task by name and update its complete status to 1
+    setTaskCompleteStatus(taskName, 1);
+}
+
+void CToDoList::onOngoingHovered()
+{
+    qDebug() << "Hovered over ongoing tasks.";
+
+    // Get the task name from the index at the cursor position
+    QString taskName = getTaskNameAtCursor(m_pwOngoing);
+
+    // Search for the task by name and update its complete status to 0
+    setTaskCompleteStatus(taskName, 0);
+}
+
+QString CToDoList::getTaskNameAtCursor(QListView* listView)
+{
+    QModelIndex index = listView->indexAt(listView->mapFromGlobal(QCursor::pos()));
+    if (index.isValid())
+    {
+        // Get the task name from the model index
+        return index.data(Qt::DisplayRole).toString();
+    }
+    return QString();
+}

@@ -59,9 +59,7 @@ Task TaskEditDialog::getTaskEdit() const
     task.course = m_courseLineEdit->text();
     task.weight = m_weightLineEdit->text();
     task.totalScore = m_totalScoreSpinBox->value();
-    task.complete = false; // Default value
-    task.semester = "...";
-    task.year = "...";
+    task.complete = 0; // Default value
     return task;
 }
 
@@ -130,9 +128,7 @@ Task TaskAddDialog::getTaskAdd() const
     task.course = m_courseLineEdit->text();
     task.weight = m_weightLineEdit->text();
     task.totalScore = m_totalScoreSpinBox->value();
-    task.complete = false; // Default value
-    task.semester = "...";
-    task.year = "...";
+    task.complete = 0; // Default value
     return task;
 }
 

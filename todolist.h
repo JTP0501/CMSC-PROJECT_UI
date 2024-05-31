@@ -14,9 +14,7 @@ struct Task {
     QString weight;
     double totalScore;
     double score;
-    bool complete;
-    QString semester;
-    QString year;
+    int complete; // Changed bool to int to store completion status as 0 or 1
 };
 
 class CToDoList : public QMainWindow
@@ -24,18 +22,24 @@ class CToDoList : public QMainWindow
     Q_OBJECT
 
 public:
-    CToDoList();
-    void loadTasksFromFile(const QString& filePath, QStringListModel* model);
+    CToDoList(QWidget *parent = nullptr); // Constructor declaration with default argument
+    void loadTasksFromFile(const QString& filePath, QStringListModel* model, bool completeStatus);
     void addTaskToFile(const Task& task, const QString& filePath);
     void loadTasksOnStartup();
     Task searchTaskByName(const QString& taskName, const QString& filePath);
     void removeTaskByName(const QString& taskName, const QString& filePath);
+    QString verifyTaskName(const QString& taskName, const QString& filePath);
+    void setTaskCompleteStatus(const QString& taskName, int completeStatus);
+    void updateTaskInFile(const Task& task, const QString& filePath);
+    QString getTaskNameAtCursor(QListView* listView);
 
 private slots:
     void onAdd();
     void onRemove();
     void onEdit();
     void onRefresh();
+    void onOngoingHovered();
+    void onWaitlistedHovered();
 
 private:
     QListView* m_pwOngoing = nullptr;
@@ -48,9 +52,7 @@ private:
 
     Console* m_console;
 
-    QString ongoingFilePath;
-    QString waitlistedFilePath;
-
+    QString tasksFilePath;
 };
 
 #endif // TODOLIST_H
