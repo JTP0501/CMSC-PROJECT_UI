@@ -106,6 +106,7 @@ void TaskEditScoreDialog::setScore(double score)
     m_scoreSpinBox->setValue(score);
 }
 
+
 void TaskEditScoreDialog::setupScoreUI()
 {
     // Setup the dialog layout

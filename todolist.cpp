@@ -1,6 +1,5 @@
 #include "todolist.h"
 #include "taskeditdialog.h"
-#include "customeventfilter.h"
 
 #include <QLabel>
 #include <QToolBar>
