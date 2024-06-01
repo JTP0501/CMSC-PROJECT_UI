@@ -163,8 +163,8 @@ void Console::onSendCommand()
     QString command = m_consoleInput->text().trimmed(); // Get the trimmed text from the line edit
     if (!command.isEmpty())
     {
-        // Append user command to console output
-        m_consoleOutput->append("User: " + command);
+        // Append user command to console output with grey color
+        m_consoleOutput->append("<font color=\"grey\">User: " + command + "</font>");
         // Process the command here
         processCommand(command);
     }
@@ -216,7 +216,6 @@ void Console::processCommand(const QString &command)
                     {
                         if (QDir().mkpath(subjectFolder))
                         {
-
                             // Create a file for the list of tasks
                             QString tasksFilePath = subjectFolder + "/" + name + "_tasks.txt";
                             qDebug() << "Tasks File Path:" << tasksFilePath;
@@ -232,6 +231,26 @@ void Console::processCommand(const QString &command)
                             {
                                 m_consoleOutput->append("Failed to create tasks file for subject: " + name);
                             }
+
+                            // Create a file for the grade breakdown
+                            QString gradesFilePath = subjectFolder + "/" + name + "_grades.txt";
+                            qDebug() << "Grades File Path:" << gradesFilePath;
+
+                            QFile gradesFile(gradesFilePath);
+                            if (gradesFile.open(QIODevice::WriteOnly | QIODevice::Text))
+                            {
+                                QTextStream gradesOut(&gradesFile);
+                                gradesOut << "Grade Breakdown for " + name + ":\n";
+                                for (const auto &weight : parts[4].split('|'))
+                                {
+                                    gradesOut << weight.split('-')[0] << ": 0\n"; // Initial grade set to 0
+                                }
+                                gradesFile.close();
+                            }
+                            else
+                            {
+                                m_consoleOutput->append("Failed to create grades file for subject: " + name);
+                            }
                         }
                         else
                         {
@@ -245,17 +264,16 @@ void Console::processCommand(const QString &command)
                 }
                 else
                 {
-                    m_consoleOutput->append("Failed to open file for writing: " + csvFilePath);
+                    m_consoleOutput->append("Failed to open CSV file for writing: " + csvFilePath);
                 }
             }
             else
             {
-                m_consoleOutput->append("Invalid command format. Expected format: add$ Year,Semester,Name,Units,WeightComponents,GradeConversions");
+                m_consoleOutput->append("Invalid command format. Expected format: add$ year,semester,name,units,weight_components,grade_conversions");
             }
         }
         break;
     }
-
     case 'r':
     {
         // Command to remove a subject
@@ -428,9 +446,9 @@ void Console::processCommand(const QString &command)
 
                         for (const auto &conversion : subject.grade_conversions)
                         {
-                            subjectInfo += "  " + QString::number(std::get<0>(conversion)) + " : " +
-                                           QString::number(std::get<1>(conversion)) + " - " +
-                                           QString::number(std::get<2>(conversion)) + "\n";
+                            subjectInfo += "  " + QString::number(std::get<0>(conversion), 'f', 2) + " : " +
+                                           QString::number(std::get<1>(conversion), 'f', 2) + " - " +
+                                           QString::number(std::get<2>(conversion), 'f', 2) + "\n";
                         }
 
                         m_consoleOutput->append(subjectInfo);
@@ -461,6 +479,72 @@ void Console::processCommand(const QString &command)
         {
             // Clear the console
             m_consoleOutput->clear();
+        }
+        break;
+    }
+
+    case 'g':
+    {
+        // Command to display grade breakdown of a specific subject
+        if (command.startsWith("grades$ "))
+        {
+            QString subjectName = command.mid(7).trimmed(); // Get the subject name
+            QString subjectFolder = desktopPath + "/theta_files/subject_files/" + subjectName;
+            QString gradesFilePath = subjectFolder + "/" + subjectName + "_grades.txt";
+
+            QFile gradesFile(gradesFilePath);
+            if (gradesFile.open(QIODevice::ReadOnly | QIODevice::Text))
+            {
+                QTextStream in(&gradesFile);
+                QString gradesData = in.readAll();
+                gradesFile.close();
+
+                if (!gradesData.isEmpty())
+                {
+                    m_consoleOutput->append(gradesData);
+                }
+                else
+                {
+                    m_consoleOutput->append("Subject doesn't exist.");
+                }
+            }
+            else
+            {
+                m_consoleOutput->append("Subject doesn't exist.");
+            }
+        }
+        break;
+    }
+
+    case 't':
+    {
+        // Command to display list of tasks of a specific subject
+        if (command.startsWith("tasks$ "))
+        {
+            QString subjectName = command.mid(6).trimmed(); // Get the subject name
+            QString subjectFolder = desktopPath + "/theta_files/subject_files/" + subjectName;
+            QString tasksFilePath = subjectFolder + "/" + subjectName + "_tasks.txt";
+
+            QFile tasksFile(tasksFilePath);
+            if (tasksFile.open(QIODevice::ReadOnly | QIODevice::Text))
+            {
+                QTextStream in(&tasksFile);
+                QString tasksData = in.readAll();
+                tasksFile.close();
+
+                if (tasksData.trimmed().split("\n").size() <= 1) // Check if tasksData is empty
+                {
+                    m_consoleOutput->append("List of tasks is empty."); // Print message if it's empty
+                }
+                else
+                {
+                    m_consoleOutput->append(tasksData);
+                }
+            }
+            else
+            {
+                m_consoleOutput->append("Subject doesn't exist.");
+            }
         }
         break;
     }
