@@ -103,7 +103,7 @@ std::vector<Subject> parse_file(const std::string &filename)
             continue;
         }
 
-        // Parse the year range
+        // Split the year range into start and end years
         std::vector<std::string> year_range = split(fields[0], '-');
         if (year_range.size() != 2)
         {
@@ -131,6 +131,7 @@ std::vector<Subject> parse_file(const std::string &filename)
     return subjects;
 }
 
+// Constructor for the Console class
 Console::Console(QWidget *parent) : QWidget(parent)
 {
     // Create a vertical layout for the console widget
@@ -156,6 +157,7 @@ Console::Console(QWidget *parent) : QWidget(parent)
     createSubjectFiles();
 }
 
+// Slot to handle command input from the user
 void Console::onSendCommand()
 {
     QString command = m_consoleInput->text().trimmed(); // Get the trimmed text from the line edit
@@ -169,83 +171,277 @@ void Console::onSendCommand()
     m_consoleInput->clear();
 }
 
+// Function to process user commands
 void Console::processCommand(const QString &command)
 {
-    if (command.startsWith("add$ "))
-    {
-        QStringList parts = command.mid(5).split(",");
-        if (parts.size() == 6)
-        {
-            QString csvLine = parts.join(",") + "\n";
-            QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
-            QString csvFilePath = desktopPath + "/theta_files/subject_files/subjects.csv";
+    QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+    QString csvFilePath = desktopPath + "/theta_files/subject_files/subjects.csv";
 
-            QFile csvFile(csvFilePath);
-            if (csvFile.open(QIODevice::Append | QIODevice::Text))
+    // Process different commands based on their first character
+    switch (command.at(0).toLatin1()) // Using toLatin1() to convert QChar to char
+    {
+    case 'a':
+    {
+        // Command to add a new subject
+        if (command.startsWith("add$ "))
+        {
+            QStringList parts = command.mid(5).split(",");
+            if (parts.size() == 6)
             {
-                QTextStream out(&csvFile);
-                out << csvLine;
-                csvFile.close();
-                m_consoleOutput->append("Added subject to CSV: " + csvLine.trimmed());
+                QString year = parts[0];
+                QString semester = parts[1];
+                QString name = parts[2];
+                QString units = parts[3];
+                QString weightComponents = parts[4];
+                QString gradeConversions = parts[5];
+
+                QString csvLine = year + "," + semester + "," + name + "," + units + "," + weightComponents + "," + gradeConversions + "\n";
+
+                qDebug() << "CSV Line:" << csvLine;
+                qDebug() << "CSV File Path:" << csvFilePath;
+
+                QFile csvFile(csvFilePath);
+                if (csvFile.open(QIODevice::Append | QIODevice::Text))
+                {
+                    QTextStream out(&csvFile);
+                    out << csvLine;
+                    csvFile.close();
+                    m_consoleOutput->append("Added subject to CSV: " + csvLine.trimmed());
+
+                    // Create a folder for the subject
+                    QString subjectFolder = desktopPath + "/theta_files/subject_files/" + name;
+                    qDebug() << "Subject Folder Path:" << subjectFolder;
+
+                    if (!QDir().exists(subjectFolder))
+                    {
+                        if (QDir().mkpath(subjectFolder))
+                        {
+
+                            // Create a file for the list of tasks
+                            QString tasksFilePath = subjectFolder + "/" + name + "_tasks.txt";
+                            qDebug() << "Tasks File Path:" << tasksFilePath;
+
+                            QFile tasksFile(tasksFilePath);
+                            if (tasksFile.open(QIODevice::WriteOnly | QIODevice::Text))
+                            {
+                                QTextStream taskOut(&tasksFile);
+                                taskOut << "List of Tasks for " + name + ":\n";
+                                tasksFile.close();
+                            }
+                            else
+                            {
+                                m_consoleOutput->append("Failed to create tasks file for subject: " + name);
+                            }
+                        }
+                        else
+                        {
+                            m_consoleOutput->append("Failed to create folder for subject: " + name);
+                        }
+                    }
+                    else
+                    {
+                        m_consoleOutput->append("Folder already exists for subject: " + name);
+                    }
+                }
+                else
+                {
+                    m_consoleOutput->append("Failed to open file for writing: " + csvFilePath);
+                }
             }
             else
             {
-                m_consoleOutput->append("Failed to open file for writing: " + csvFilePath);
+                m_consoleOutput->append("Invalid command format. Expected format: add$ Year,Semester,Name,Units,WeightComponents,GradeConversions");
             }
         }
-        else
-        {
-            m_consoleOutput->append("Invalid command format. Expected format: add$ Year,Semester,Name,Units,WeightComponents,GradeConversions");
-        }
+        break;
     }
-    else if (command.startsWith("rm$ "))
+
+    case 'r':
     {
-        QString subjectName = command.mid(4).trimmed(); // Adjusted to remove "rm$ "
-        if (!subjectName.isEmpty())
+        // Command to remove a subject
+        if (command.startsWith("rm$ "))
         {
-            QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
-            QString csvFilePath = desktopPath + "/theta_files/subject_files/subjects.csv";
+            QString subjectName = command.mid(4).trimmed(); // Adjusted to remove "rm$ "
+            if (!subjectName.isEmpty())
+            {
+                QFile csvFile(csvFilePath);
+                if (csvFile.open(QIODevice::ReadOnly | QIODevice::Text))
+                {
+                    QTextStream in(&csvFile);
+                    QStringList lines;
+                    bool found = false;
+                    while (!in.atEnd())
+                    {
+                        QString line = in.readLine();
+                        if (!line.contains(subjectName, Qt::CaseInsensitive))
+                        {
+                            lines.append(line);
+                        }
+                        else
+                        {
+                            found = true;
+                        }
+                    }
+                    csvFile.close();
+
+                    if (found)
+                    {
+                        if (csvFile.open(QIODevice::WriteOnly | QIODevice::Text))
+                        {
+                            QTextStream out(&csvFile);
+                            for (const QString &line : lines)
+                            {
+                                out << line << "\n";
+                            }
+                            csvFile.close();
+                            m_consoleOutput->append("Removed subject: " + subjectName);
+
+                            // Remove the subject folder
+                            QString subjectFolder = desktopPath + "/theta_files/subject_files/" + subjectName;
+                            qDebug() << "Subject Folder Path for Removal:" << subjectFolder;
+                            QDir dir(subjectFolder);
+                            if (dir.exists())
+                            {
+                                dir.removeRecursively();
+                                m_consoleOutput->append("Removed folder for subject: " + subjectName);
+                            }
+                            else
+                            {
+                                m_consoleOutput->append("Subject folder not found: " + subjectName);
+                            }
+                        }
+                        else
+                        {
+                            m_consoleOutput->append("Failed to open file for writing: " + csvFilePath);
+                        }
+                    }
+                    else
+                    {
+                        m_consoleOutput->append("Subject not found: " + subjectName);
+                    }
+                }
+                else
+                {
+                    m_consoleOutput->append("Failed to open file for reading: " + csvFilePath);
+                }
+            }
+            else
+            {
+                m_consoleOutput->append("Invalid command format. Expected format: rm$ Name");
+            }
+        }
+        break;
+    }
+
+    case 'p':
+    {
+        // Command to print all subjects from the file
+        if (command == "parse")
+        {
+            QFile csvFile(csvFilePath);
+            if (csvFile.open(QIODevice::ReadOnly | QIODevice::Text))
+            {
+                QTextStream in(&csvFile);
+                QString firstLine = in.readLine(); // Read the header
+                if (in.atEnd() || in.readLine().isEmpty()) // Check if there's only the header or if there's no additional content
+                {
+                    m_consoleOutput->append("File is empty.");
+                }
+                else
+                {
+                    // Parse the CSV file and display subjects
+                    std::string csvFilePathStr = csvFilePath.toStdString();
+                    std::vector<Subject> subjects = parse_file(csvFilePathStr);
+                    for (const auto &subject : subjects)
+                    {
+                        // Display subject information in the console
+                        QString subjectInfo = "Year: " + QString::fromStdString(subject.year) + "\n" +
+                                              "Semester: " + QString::fromStdString(subject.semester) + "\n" +
+                                              "Subject: " + QString::fromStdString(subject.name) + "\n" +
+                                              "Units: " + QString::number(subject.units) + "\n" +
+                                              "Weights:\n";
+
+                        for (const auto &weight : subject.weights)
+                        {
+                            subjectInfo += "  " + QString::fromStdString(weight.first) + " - " + QString::number(weight.second) + "%\n";
+                        }
+
+                        subjectInfo += "Grade Conversions:\n";
+
+                        for (const auto &conversion : subject.grade_conversions)
+                        {
+                            subjectInfo += "  " + QString::number(std::get<0>(conversion)) + " : " +
+                                           QString::number(std::get<1>(conversion)) + " - " +
+                                           QString::number(std::get<2>(conversion)) + "\n";
+                        }
+
+                        m_consoleOutput->append(subjectInfo);
+                    }
+                }
+                csvFile.close();
+            }
+            else
+            {
+                m_consoleOutput->append("Failed to open file for reading: " + csvFilePath);
+            }
+        }
+        // Command to parse a specific subject
+        else if (command.startsWith("parse$ "))
+        {
+            QString subjectName = command.mid(7).trimmed(); // Get the subject name
+            bool subjectFound = false;
 
             QFile csvFile(csvFilePath);
             if (csvFile.open(QIODevice::ReadOnly | QIODevice::Text))
             {
-                QStringList lines;
                 QTextStream in(&csvFile);
-                bool found = false;
+                QString firstLine = in.readLine(); // Read the header
 
                 while (!in.atEnd())
                 {
                     QString line = in.readLine();
-                    QStringList fields = line.split(',');
-                    if (fields.size() >= 3 && fields[2].trimmed() != subjectName) // Ensure that subject name matches exactly
+                    QStringList parts = line.split(",");
+                    if (parts.size() == 6 && parts[2].trimmed().compare(subjectName, Qt::CaseInsensitive) == 0)
                     {
-                        lines.append(line);
-                    }
-                    else
-                    {
-                        found = true;
+                        // Found the subject, parse and display it
+                        Subject subject;
+                        subject.year = parts[0].trimmed().toStdString();
+                        subject.semester = parts[1].trimmed().toStdString();
+                        subject.name = parts[2].trimmed().toStdString();
+                        subject.units = parts[3].trimmed().toInt();
+                        parse_weights(parts[4].trimmed().toStdString(), subject);
+                        parse_grade_conversions(parts[5].trimmed().toStdString(), subject);
+
+                        // Display subject information in the console
+                        QString subjectInfo = "Year: " + QString::fromStdString(subject.year) + "\n" +
+                                              "Semester: " + QString::fromStdString(subject.semester) + "\n" +
+                                              "Subject: " + QString::fromStdString(subject.name) + "\n" +
+                                              "Units: " + QString::number(subject.units) + "\n" +
+                                              "Weights:\n";
+
+                        for (const auto &weight : subject.weights)
+                        {
+                            subjectInfo += "  " + QString::fromStdString(weight.first) + " - " + QString::number(weight.second) + "%\n";
+                        }
+
+                        subjectInfo += "Grade Conversions:\n";
+
+                        for (const auto &conversion : subject.grade_conversions)
+                        {
+                            subjectInfo += "  " + QString::number(std::get<0>(conversion)) + " : " +
+                                           QString::number(std::get<1>(conversion)) + " - " +
+                                           QString::number(std::get<2>(conversion)) + "\n";
+                        }
+
+                        m_consoleOutput->append(subjectInfo);
+                        subjectFound = true;
+                        break;
                     }
                 }
+
                 csvFile.close();
 
-                if (found)
-                {
-                    if (csvFile.open(QIODevice::WriteOnly | QIODevice::Text))
-                    {
-                        QTextStream out(&csvFile);
-                        for (const QString &line : lines)
-                        {
-                            out << line << "\n";
-                        }
-                        csvFile.close();
-                        m_consoleOutput->append("Removed subject: " + subjectName);
-                    }
-                    else
-                    {
-                        m_consoleOutput->append("Failed to open file for writing: " + csvFilePath);
-                    }
-                }
-                else
+                if (!subjectFound)
                 {
                     m_consoleOutput->append("Subject not found: " + subjectName);
                 }
@@ -255,75 +451,28 @@ void Console::processCommand(const QString &command)
                 m_consoleOutput->append("Failed to open file for reading: " + csvFilePath);
             }
         }
-        else
-        {
-            m_consoleOutput->append("Invalid command format. Expected format: rm$ Name");
-        }
+        break;
     }
-    else if (command == "pf")
-    {
-        QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
-        QString csvFilePath = desktopPath + "/theta_files/subject_files/subjects.csv";
 
-        QFile csvFile(csvFilePath);
-        if (csvFile.open(QIODevice::ReadOnly | QIODevice::Text))
+    case 'c':
+    {
+        // Command to clear the console
+        if (command == "clear")
         {
-            QTextStream in(&csvFile);
-            QString firstLine = in.readLine(); // Read the header
-            if (in.atEnd() || in.readLine().isEmpty()) // Check if there's only the header or if there's no additional content
-            {
-                m_consoleOutput->append("File is empty.");
-            }
-            else
-            {
-                // Parse the CSV file and display subjects
-                std::string csvFilePathStr = csvFilePath.toStdString();
-                std::vector<Subject> subjects = parse_file(csvFilePathStr);
-                for (const auto &subject : subjects)
-                {
-                    // Display subject information in the console
-                    QString subjectInfo = "Year: " + QString::fromStdString(subject.year) + "\n" +
-                                          "Semester: " + QString::fromStdString(subject.semester) + "\n" +
-                                          "Subject: " + QString::fromStdString(subject.name) + "\n" +
-                                          "Units: " + QString::number(subject.units) + "\n" +
-                                          "Weights:\n";
-
-                    for (const auto &weight : subject.weights)
-                    {
-                        subjectInfo += "  " + QString::fromStdString(weight.first) + " - " + QString::number(weight.second) + "%\n";
-                    }
-
-                    subjectInfo += "Grade Conversions:\n";
-
-                    for (const auto &conversion : subject.grade_conversions)
-                    {
-                        subjectInfo += "  " + QString::number(std::get<0>(conversion)) + " : " +
-                                       QString::number(std::get<1>(conversion)) + " - " +
-                                       QString::number(std::get<2>(conversion)) + "\n";
-                    }
-
-                    m_consoleOutput->append(subjectInfo);
-                }
-            }
-            csvFile.close();
+            // Clear the console
+            m_consoleOutput->clear();
         }
-        else
-        {
-            m_consoleOutput->append("Failed to open file for reading: " + csvFilePath);
-        }
+        break;
     }
-    else if (command == "clear")
-    {
-        // Clear the console
-        m_consoleOutput->clear();
-    }
-    else
-    {
+
+    default:
         // Unknown Command
         m_consoleOutput->append("Unknown command. Please use 'add$ ' to add a subject, 'remove$ ' to remove a subject, 'parse_file' to parse the file, or 'clear' to clear the console.");
+        break;
     }
 }
 
+// Function to create the necessary subject files and folders
 void Console::createSubjectFiles()
 {
     qDebug() << "Starting createSubjectFiles()";
@@ -407,4 +556,3 @@ void Console::createSubjectFiles()
 
     qDebug() << "Finished createSubjectFiles()";
 }
-

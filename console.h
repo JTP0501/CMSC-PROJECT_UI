@@ -22,6 +22,8 @@ private:
     QTextEdit* m_consoleOutput;
     QLineEdit* m_consoleInput;
     QString csvFilePath;
+    QString subjectFolder;
+    QString subjectFolderPath;
 };
 
 #endif // CONSOLE_H

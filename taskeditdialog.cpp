@@ -59,7 +59,7 @@ Task TaskEditDialog::getTaskEdit() const
     task.course = m_courseLineEdit->text();
     task.weight = m_weightLineEdit->text();
     task.totalScore = m_totalScoreSpinBox->value();
-    task.complete;
+    //task.complete;
     task.score = 0;
     return task;
 }

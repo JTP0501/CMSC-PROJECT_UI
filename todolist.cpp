@@ -183,7 +183,7 @@ void CToDoList::onAdd()
 
         // Set complete to 0 for new tasks
         newTask.complete = 0;
-        newTask.score = 0.0;
+        newTask.score = -1; // Set default score value to -1
 
         // Adding the task name to the ongoing list view
         static_cast<QStringListModel*>(m_pwOngoing->model())->insertRow(m_pwOngoing->model()->rowCount());
@@ -243,6 +243,36 @@ void CToDoList::onEdit()
 
                 // Update the task in the file
                 updateTaskInFile(currentTask, tasksFilePath);
+
+                // If score is greater than or equal to 0, move the task to the subject folder and file
+                if (currentTask.score >= 0) {
+                    QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
+                    QString subjectFilePath = desktopPath + "/theta_files/subject_files/" + currentTask.course + "/" + currentTask.course + "_tasks.txt";
+
+                    QFile subjectFile(subjectFilePath);
+                    if (subjectFile.open(QIODevice::Append | QIODevice::Text))
+                    {
+                        QTextStream subjectOut(&subjectFile);
+
+                        // Format: Task Name - Weight - Score / Total Score
+                        QString formattedTask = QString("%1 - %2 - %3 / %4")
+                                                    .arg(currentTask.taskName)
+                                                    .arg(currentTask.weight)
+                                                    .arg(currentTask.score)
+                                                    .arg(currentTask.totalScore);
+
+                        subjectOut << formattedTask << "\n";
+                        subjectFile.close();
+
+                        // Remove the task from the original file
+                        removeTaskByName(currentTask.taskName, tasksFilePath);
+                        loadTasksOnStartup();
+                    }
+                    else
+                    {
+                        qDebug() << "Failed to open subject file for writing:" << subjectFilePath;
+                    }
+                }
 
                 // Refresh the list of tasks from the file
                 loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 1);

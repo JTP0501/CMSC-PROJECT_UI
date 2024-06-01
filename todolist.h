@@ -16,7 +16,7 @@ struct Task {
     double score;
     int complete; // Changed bool to int to store completion status as 0 or 1
 
-    Task() : totalScore(0.0), score(0.0), complete(0) {}
+    Task() : totalScore(0.0), score(-1.0), complete(0) {}
 };
 
 class CToDoList : public QMainWindow
@@ -34,6 +34,8 @@ public:
     void setTaskCompleteStatus(const QString& taskName, int completeStatus);
     void updateTaskInFile(const Task& task, const QString& filePath);
     QString getTaskNameAtCursor(QListView* listView);
+    QString constructSubjectFilePath(const Task& task);
+    bool writeTaskToSubjectFile(const Task& task, const QString& subjectFilePath);
 
 private slots:
     void onAdd();
