@@ -63,8 +63,8 @@ void parse_grade_conversions(const std::string &conversion_str, Subject &subject
             try
             {
                 double grade = std::stod(conversion.substr(0, pos1));
-                int min_score = std::stoi(conversion.substr(pos1 + 1, pos2 - pos1 - 1));
-                int max_score = std::stoi(conversion.substr(pos2 + 1));
+                double min_score = std::stod(conversion.substr(pos1 + 1, pos2 - pos1 - 1));
+                double max_score = std::stod(conversion.substr(pos2 + 1));
                 subject.grade_conversions.push_back({grade, min_score, max_score});
             }
             catch (const std::invalid_argument &e)
@@ -370,9 +370,9 @@ void Console::processCommand(const QString &command)
 
                         for (const auto &conversion : subject.grade_conversions)
                         {
-                            subjectInfo += "  " + QString::number(std::get<0>(conversion)) + " : " +
-                                           QString::number(std::get<1>(conversion)) + " - " +
-                                           QString::number(std::get<2>(conversion)) + "\n";
+                            subjectInfo += "  " + QString::number(std::get<0>(conversion), 'f', 2) + " : " +
+                                           QString::number(std::get<1>(conversion), 'f', 2) + " - " +
+                                           QString::number(std::get<2>(conversion), 'f', 2) + "\n";
                         }
 
                         m_consoleOutput->append(subjectInfo);
