@@ -113,6 +113,14 @@ CToDoList::CToDoList(QWidget *parent)
     m_pwOngoing->setModel(new QStringListModel());
     m_pwWaitlisted->setModel(new QStringListModel());
 
+    // Set the edit triggers for the list views to prevent editing
+    m_pwOngoing->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_pwWaitlisted->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    // Connect doubleClicked signal for both views to onEdit slot
+    connect(m_pwOngoing, &QListView::doubleClicked, this, &CToDoList::onEdit);
+    connect(m_pwWaitlisted, &QListView::doubleClicked, this, &CToDoList::onEdit);
+
     // Set stylesheets for list views
     m_pwOngoing->setStyleSheet(
         "QListView { font-size: 15pt; font-weight: bold; }"

@@ -7,6 +7,7 @@
 #include <QListView>
 #include <QStringListModel>
 #include "console.h"
+#include "gradecalculator.h"
 
 struct Task {
     QString taskName;
@@ -36,6 +37,7 @@ public:
     QString getTaskNameAtCursor(QListView* listView);
     QString constructSubjectFilePath(const Task& task);
     bool writeTaskToSubjectFile(const Task& task, const QString& subjectFilePath);
+    void performGradeCalculation(const Task& task);
 
 private slots:
     void onAdd();

@@ -155,6 +155,7 @@ Console::Console(QWidget *parent) : QWidget(parent)
 
     // Call the function to create the subject_files folder and CSV file
     createSubjectFiles();
+
 }
 
 // Slot to handle command input from the user
@@ -188,9 +189,31 @@ void Console::processCommand(const QString &command)
             QStringList parts = command.mid(5).split(",");
             if (parts.size() == 6)
             {
+                QString name = parts[2].trimmed(); // Get the name of the subject
+
+                // Check if the subject already exists in the CSV file
+                QFile checkFile(csvFilePath);
+                if (checkFile.open(QIODevice::ReadOnly | QIODevice::Text))
+                {
+                    QTextStream in(&checkFile);
+                    in.readLine(); // Skip the header line
+                    while (!in.atEnd())
+                    {
+                        QString line = in.readLine();
+                        QStringList fields = line.split(",");
+                        if (fields.size() >= 3 && fields[2].trimmed().compare(name, Qt::CaseInsensitive) == 0)
+                        {
+                            m_consoleOutput->append("Subject already exists: " + name);
+                            checkFile.close();
+                            return; // Exit the function without adding the subject
+                        }
+                    }
+                    checkFile.close();
+                }
+
+                // Subject doesn't exist, proceed to add it
                 QString year = parts[0];
                 QString semester = parts[1];
-                QString name = parts[2];
                 QString units = parts[3];
                 QString weightComponents = parts[4];
                 QString gradeConversions = parts[5];
@@ -318,14 +341,13 @@ void Console::processCommand(const QString &command)
                             QString subjectFolder = desktopPath + "/theta_files/subject_files/" + subjectName;
                             qDebug() << "Subject Folder Path for Removal:" << subjectFolder;
                             QDir dir(subjectFolder);
-                            if (dir.exists())
-                            {
-                                dir.removeRecursively();
-                                m_consoleOutput->append("Removed folder for subject: " + subjectName);
-                            }
-                            else
-                            {
-                                m_consoleOutput->append("Subject folder not found: " + subjectName);
+                            if (dir.exists()) {
+                                // Remove the directory and its contents recursively
+                                if (dir.removeRecursively()) {
+                                    qDebug() << "Subject folder removed successfully.";
+                                } else {
+                                    qDebug() << "Failed to remove subject folder.";
+                                }
                             }
                         }
                         else
@@ -640,3 +662,4 @@ void Console::createSubjectFiles()
 
     qDebug() << "Finished createSubjectFiles()";
 }
+
