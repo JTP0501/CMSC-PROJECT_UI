@@ -9,6 +9,9 @@
 #include <iostream> // Include for std::cerr and std::endl
 #include <fstream> // Include for file operations
 #include <sstream> // Include for string stream operations
+#include <QApplication>
+#include <QFontDatabase>
+#include <QLabel>
 
 // Function to split a string by a delimiter
 std::vector<std::string> split(const std::string &s, char delimiter)
@@ -134,21 +137,30 @@ std::vector<Subject> parse_file(const std::string &filename)
 // Constructor for the Console class
 Console::Console(QWidget *parent) : QWidget(parent)
 {
+    // Load fonts
+    QFontDatabase::addApplicationFont(":/Fonts/8514fix.fon");
+    QFontDatabase::addApplicationFont(":/Fonts/VT323-Regular.ttf");
+
+
     // Create a vertical layout for the console widget
     QVBoxLayout* layout = new QVBoxLayout(this);
 
     // Create a label for the console
     QLabel* consoleLabel = new QLabel("Console", this);
-    consoleLabel->setStyleSheet("font-size: 15pt;");
+    consoleLabel->setStyleSheet("font-family: 'VT323'; font-size: 25pt; font-weight: bold; color: black;");
     layout->addWidget(consoleLabel);
 
     // Create a text edit area for console output
     m_consoleOutput = new QTextEdit(this);
+    m_consoleOutput->setStyleSheet("border: 1px solid black; background-color: #322C2B");
     m_consoleOutput->setReadOnly(true); // Set to read-only
+    m_consoleOutput->setFont(QFont("Fixedsys", 13));
     layout->addWidget(m_consoleOutput);
 
     // Create a line edit for console input
     m_consoleInput = new QLineEdit(this);
+    m_consoleInput->setStyleSheet("border: 1px solid black; background-color: #322C2B;");
+    m_consoleInput->setFont(QFont("Fixedsys", 13));
     // Connect the returnPressed signal of the line edit to the onSendCommand slot
     connect(m_consoleInput, &QLineEdit::returnPressed, this, &Console::onSendCommand);
     layout->addWidget(m_consoleInput);

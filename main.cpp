@@ -8,6 +8,13 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv); // Create a QApplication instance
 
+    a.setStyleSheet(
+        "QListView { "
+        "   background-color: rgba(255, 125, 41, 0.3); "
+        "   border: 1px solid black; "  // 1px solid black border
+        "} "
+        );
+
     // Translator stuff, do not touch
     QTranslator translator; // Create a translator object for handling translations
 

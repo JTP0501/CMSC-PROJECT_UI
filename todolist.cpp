@@ -12,18 +12,41 @@
 #include <QTemporaryFile>
 #include <QHoverEvent>
 #include <QMimeData>
+#include <QApplication>
+#include <QFontDatabase>
+#include <QLabel>
 
 
 CToDoList::CToDoList(QWidget *parent)
     : QMainWindow(parent), tasksFilePath("") // Initialize tasksFilePath in the constructor initialization list
 {
+    // Load the fonts
+    QFontDatabase::addApplicationFont(":/Fonts/Candara.ttf");
+    QFontDatabase::addApplicationFont(":/Fonts/comic.ttf");
+    QFontDatabase::addApplicationFont(":/Fonts/8514fix.fon");
+    QFontDatabase::addApplicationFont(":/Fonts/8514sys.fon");
+    QFontDatabase::addApplicationFont(":/Fonts/Gabriola.ttf");
+    QFontDatabase::addApplicationFont(":/Fonts/impact.ttf");
+    QFontDatabase::addApplicationFont(":/Fonts/Inkfree.ttf");
+    QFontDatabase::addApplicationFont(":/Fonts/times.ttf");
+    QFontDatabase::addApplicationFont(":/Fonts/cour.ttf");
+    QFontDatabase::addApplicationFont(":/Fonts/arial.ttf");
+    QFontDatabase::addApplicationFont(":/Fonts/VT323-Regular.ttf");
+
     // Create the main widget
     QWidget* pWidget = new QWidget(this);
-    pWidget->setStyleSheet("background-color: #ECF0F1");
     setCentralWidget(pWidget);
+    pWidget->setObjectName("mainWidget"); // Set an object name for the widget
 
     // Set window title
     setWindowTitle("Theta(θ): Task Handling and Evaluation Tracking Application");
+
+    pWidget->setStyleSheet(
+        "QWidget#mainWidget {"
+        "   background-color: #FEFFD2;"
+        "   background-image: url(:/pxArt (3).png);"
+        "}"
+        );
 
     // Create the main layout
     QVBoxLayout* pMainLayout = new QVBoxLayout();
@@ -34,10 +57,10 @@ CToDoList::CToDoList(QWidget *parent)
     pMainLayout->addLayout(pHeaderLayout);
 
     // Title label
-    QLabel* pwTitle = new QLabel("To Do List", this);
+    QLabel* pwTitle = new QLabel(this);
+    pwTitle->setPixmap(QPixmap(":/pxArt.png"));
     pHeaderLayout->addWidget(pwTitle, 0, Qt::AlignCenter);
     pwTitle->setAlignment(Qt::AlignCenter);
-    pwTitle->setStyleSheet("font-size: 30pt; margin: 10%");
 
     // Horizontal layout for labels
     QHBoxLayout* pHLayoutLabels = new QHBoxLayout();
@@ -45,11 +68,13 @@ CToDoList::CToDoList(QWidget *parent)
 
     // Labels for ongoing and waitlisted tasks
     QLabel* plblOngoing = new QLabel("Ongoing", this);
-    plblOngoing->setStyleSheet("font-size: 15pt;");
+    plblOngoing->setFont(QFont("VT323", 25, QFont::Bold));
+    plblOngoing->setStyleSheet("color: black;");
     pHLayoutLabels->addWidget(plblOngoing);
 
     QLabel* plblWaitlisted = new QLabel("Waitlisted", this);
-    plblWaitlisted->setStyleSheet("font-size: 15pt;");
+    plblWaitlisted->setFont(QFont("VT323", 25, QFont::Bold));
+    plblWaitlisted->setStyleSheet("color: black;");
     pHLayoutLabels->addWidget(plblWaitlisted);
 
     // Main horizontal layout to hold the lists
@@ -123,19 +148,20 @@ CToDoList::CToDoList(QWidget *parent)
 
     // Set stylesheets for list views
     m_pwOngoing->setStyleSheet(
-        "QListView { font-size: 15pt; font-weight: bold; }"
-        "QListView::item { background-color: #E74C3C; padding: 5%;"
-        "border: 1px solid #C0392B; border-radius: 10px; margin-top: 2.5px; margin-bottom: 2.5px; }"
-        "QListView::item::hover { background-color: #D44233 }");
+        "QListView { font-family: 'Fixedsys'; font-size: 15pt; color: black;}"
+        "QListView::item { background-color: #F8F6E3; padding: 5%;"
+        "border: 1px solid black; margin-top: 2.5px; margin-bottom: 2.5px; }"
+        "QListView::item::hover { background-color: #F8F6E3 }");
 
     m_pwWaitlisted->setStyleSheet(
-        "QListView { font-size: 15pt; font-weight: bold; }"
-        "QListView::item { background-color: #2ECC71; padding: 5%;"
-        "border: 1px solid #27AE60; border-radius: 10px; margin-top: 2.5px; margin-bottom: 2.5px; }"
-        "QListView::item::hover { background-color: #25A85D }");
+        "QListView { font-family: 'Fixedsys'; font-size: 15pt;}"
+        "QListView::item { background-color: #97BE5A; padding: 5%;"
+        "border: 1px solid black; margin-top: 2.5px; margin-bottom: 2.5px; }"
+        "QListView::item::hover { background-color: #97BE5A }");
 
     // Create a toolbar
     QToolBar* pToolBar = new QToolBar(this);
+    pToolBar->setStyleSheet("background-color: #97BE5A;");
     addToolBar(pToolBar);
 
     // Add actions to the toolbar for add, remove, and edit operations
