@@ -146,17 +146,19 @@ CToDoList::CToDoList(QWidget *parent)
     connect(m_pwOngoing, &QListView::doubleClicked, this, &CToDoList::onEdit);
     connect(m_pwWaitlisted, &QListView::doubleClicked, this, &CToDoList::onEdit);
 
-    // Set stylesheets for list views
     m_pwOngoing->setStyleSheet(
-        "QListView { font-family: 'Fixedsys'; font-size: 15pt; color: black;}"
+        "QListView { font-family: 'Fixedsys'; font-size: 15pt; color: black; }"
         "QListView::item { background-color: #F8F6E3; padding: 5%;"
-        "border: 1px solid black; margin-top: 2.5px; margin-bottom: 2.5px; }"
-        "QListView::item::hover { background-color: #F8F6E3 }");
+        "border: 1px solid black; margin-top: 1px; margin-bottom: 1px; }"
+        "QListView::item::hover { background-color: #F8F6E3; }"
+        "QListView::item::selected { background-color: #F8F6E3; color: black; }"
+        "QListView::item::focus { background-color: #F8F6E3; color: black; }"
+        );
 
     m_pwWaitlisted->setStyleSheet(
         "QListView { font-family: 'Fixedsys'; font-size: 15pt;}"
         "QListView::item { background-color: #97BE5A; padding: 5%;"
-        "border: 1px solid black; margin-top: 2.5px; margin-bottom: 2.5px; }"
+        "border: 1px solid black; margin-top: 1px; margin-bottom: 1px; }"
         "QListView::item::hover { background-color: #97BE5A }");
 
     // Create a toolbar
