@@ -152,14 +152,14 @@ Console::Console(QWidget *parent) : QWidget(parent)
 
     // Create a text edit area for console output
     m_consoleOutput = new QTextEdit(this);
-    m_consoleOutput->setStyleSheet("border: 1px solid black; background-color: #322C2B");
+    m_consoleOutput->setStyleSheet("border: 1px solid black; background-color: #322C2B; color: white;");
     m_consoleOutput->setReadOnly(true); // Set to read-only
     m_consoleOutput->setFont(QFont("Fixedsys", 13));
     layout->addWidget(m_consoleOutput);
 
     // Create a line edit for console input
     m_consoleInput = new QLineEdit(this);
-    m_consoleInput->setStyleSheet("border: 1px solid black; background-color: #322C2B;");
+    m_consoleInput->setStyleSheet("border: 1px solid black; background-color: #322C2B; color: white;");
     m_consoleInput->setFont(QFont("Fixedsys", 13));
     // Connect the returnPressed signal of the line edit to the onSendCommand slot
     connect(m_consoleInput, &QLineEdit::returnPressed, this, &Console::onSendCommand);
@@ -168,6 +168,16 @@ Console::Console(QWidget *parent) : QWidget(parent)
     // Call the function to create the subject_files folder and CSV file
     createSubjectFiles();
 
+    m_consoleOutput->append("--------------------------------------------------------\n\n");
+    m_consoleOutput->append("add$ <Y,S,N,U,W,G> - Adds a subject to the system\n");
+    m_consoleOutput->append("e.g. 2023-2024,1st,CMSC 11,3,MACHINE PROBLEMS-40|QUIZZES-10|LONG EXAMS-30|FINAL PROJECT-20,1.00:96-100|1.25:91-95|1.50:86-90|1.75:81-85|2.00:76-80|2.25:72-75|2.50:68-71|2.75:64-67|3.00:60-63|5.00:0-59\n");
+    m_consoleOutput->append("rm$ <subject_name> - Removes a subject from the system\n");
+    m_consoleOutput->append("parse - Parses all the subjects and displays in console\n");
+    m_consoleOutput->append("parse$ <subject_name> - Adds a subject to the system\n");
+    m_consoleOutput->append("clear - Clears the console.\n");
+    m_consoleOutput->append("tasks$ <subject_name> - Displays all the tasks taken in of that subject.\n");
+    m_consoleOutput->append("grades$ <subject_name> - Displays the grade breakdown of that subject.\n");
+    m_consoleOutput->append("--------------------------------------------------------\n");
 }
 
 // Slot to handle command input from the user

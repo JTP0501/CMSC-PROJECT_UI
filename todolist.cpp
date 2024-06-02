@@ -343,7 +343,7 @@ void CToDoList::onEdit()
                 updateTaskInFile(currentTask, tasksFilePath);
 
                 // If score is greater than or equal to 0, move the task to the subject folder and file
-                if (currentTask.score >= 0) {
+                if (currentTask.score >= 0 && currentTask.totalScore > 0) {
                     QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
                     QString subjectFolderPath = desktopPath + "/theta_files/subject_files/" + currentTask.course;
 
