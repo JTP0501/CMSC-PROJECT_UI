@@ -5,6 +5,9 @@
 #include <QPushButton>
 #include <QMessageBox>
 #include <QDoubleSpinBox>
+#include <QApplication>
+#include <QFontDatabase>
+#include <QLabel>
 
 TaskEditDialog::TaskEditDialog(QWidget *parent)
     : QDialog(parent),
@@ -12,11 +15,17 @@ TaskEditDialog::TaskEditDialog(QWidget *parent)
     m_courseLineEdit(new QLineEdit(this)),
     m_weightLineEdit(new QLineEdit(this)),
     m_totalScoreSpinBox(new QDoubleSpinBox(this))
+
 {
+    QFontDatabase::addApplicationFont(":/Fonts/Fixedsys.fon");
+
     setupEditUI();
     // In TaskEditDialog class
     connect(m_courseLineEdit, &QLineEdit::textChanged, this, &TaskEditDialog::convertToUpperCaseEdit);
     connect(m_weightLineEdit, &QLineEdit::textChanged, this, &TaskEditDialog::convertToUpperCaseEdit);
+
+    // Set the stylesheet
+    setStyleSheet("background-color: #97BE5A");
 }
 
 void TaskEditDialog::setupEditUI()
@@ -25,25 +34,41 @@ void TaskEditDialog::setupEditUI()
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // Add input fields
-    mainLayout->addWidget(new QLabel("Task Name:", this));
+    QLabel *taskNameLabel = new QLabel("Task Name:", this);
+    taskNameLabel->setFont(QFont("System", 10));
+    taskNameLabel->setStyleSheet("color: white;");
+    mainLayout->addWidget(taskNameLabel);
+    m_taskNameLineEdit->setStyleSheet("border: 1px solid black; color: black; background-color: #F8F6E3; font: 10pt 'System';"); // Set black border, font color, and font
     mainLayout->addWidget(m_taskNameLineEdit);
 
-    mainLayout->addWidget(new QLabel("Course:", this));
+    QLabel *courseLabel = new QLabel("Course:", this);
+    courseLabel->setFont(QFont("System", 10));
+    courseLabel->setStyleSheet("color: white;");
+    mainLayout->addWidget(courseLabel);
+    m_courseLineEdit->setStyleSheet("border: 1px solid black; color: black; background-color: #F8F6E3; font: 10pt 'System';"); // Set black border, font color, and font
     mainLayout->addWidget(m_courseLineEdit);
 
-    mainLayout->addWidget(new QLabel("Weight Component:", this));
+    QLabel *weightLabel = new QLabel("Weight Component:", this);
+    weightLabel->setFont(QFont("System", 10));
+    weightLabel->setStyleSheet("color: white;");
+    mainLayout->addWidget(weightLabel);
+    m_weightLineEdit->setStyleSheet("border: 1px solid black; color: black; background-color: #F8F6E3; font: 10pt 'System';"); // Set black border, font color, and font
     mainLayout->addWidget(m_weightLineEdit);
 
-    mainLayout->addWidget(new QLabel("Total Score:", this));
+    QLabel *totalScoreLabel = new QLabel("Total Score:", this);
+    totalScoreLabel->setFont(QFont("System", 10));
+    totalScoreLabel->setStyleSheet("color: white;");
+    mainLayout->addWidget(totalScoreLabel);
+    m_totalScoreSpinBox->setStyleSheet("border: 1px solid black; color: black; background-color: #F8F6E3; font: 10pt 'System';"); // Set black border, font color, and font
     m_totalScoreSpinBox->setRange(0.0, 200.0);
     mainLayout->addWidget(m_totalScoreSpinBox);
 
     // Add buttons
     QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    buttonBox->setStyleSheet("color: black; background-color: #FFBF78; font: 10pt 'System';"); // Set black border, font color, and font
     connect(buttonBox, &QDialogButtonBox::accepted, this, &TaskEditDialog::saveTaskEdit);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &TaskEditDialog::reject);
     mainLayout->addWidget(buttonBox);
-
     setLayout(mainLayout);
 }
 
@@ -83,6 +108,12 @@ TaskEditScoreDialog::TaskEditScoreDialog(QWidget *parent)
     : QDialog(parent), m_scoreSpinBox(new QDoubleSpinBox(this)), m_totalScoreLabel(new QLabel(this)), m_totalScore(0.0)
 {
     setupScoreUI();
+
+    // Set the window title
+    setWindowTitle("Add Score");
+
+    // Set the stylesheet
+    setStyleSheet("background-color: #97BE5A");
 }
 
 void TaskEditScoreDialog::setTotalScore(double totalScore)
@@ -116,15 +147,22 @@ void TaskEditScoreDialog::setupScoreUI()
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // Add the score input field
-    mainLayout->addWidget(new QLabel("Score:", this));
+    QLabel *scoreLabel = new QLabel("Score:", this);
+    scoreLabel->setFont(QFont("System", 10));
+    scoreLabel->setStyleSheet("color: white;");
+    mainLayout->addWidget(scoreLabel);
     m_scoreSpinBox->setRange(0.0, 200.0);
+    m_scoreSpinBox->setStyleSheet("border: 1px solid black; color: black; background-color: #F8F6E3; font: 10pt 'System';");
     mainLayout->addWidget(m_scoreSpinBox);
 
     // Add the total score label
+    m_totalScoreLabel->setFont(QFont("System", 10));
+    m_totalScoreLabel->setStyleSheet("color: white;");
     mainLayout->addWidget(m_totalScoreLabel);
 
     // Add buttons
     QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    buttonBox->setStyleSheet("color: black; background-color: #FFBF78; font: 10pt 'System';"); // Set black border, font color, and font
     connect(buttonBox, &QDialogButtonBox::accepted, this, &TaskEditScoreDialog::saveTaskEdit);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &TaskEditScoreDialog::reject);
     mainLayout->addWidget(buttonBox);
@@ -145,6 +183,9 @@ TaskAddDialog::TaskAddDialog(QWidget *parent)
     // In TaskAddDialog class
     connect(m_courseLineEdit, &QLineEdit::textChanged, this, &TaskAddDialog::convertToUpperCaseAdd);
     connect(m_weightLineEdit, &QLineEdit::textChanged, this, &TaskAddDialog::convertToUpperCaseAdd);
+
+    // Set the stylesheet
+    setStyleSheet("background-color: #97BE5A");
 }
 
 void TaskAddDialog::setupAddUI()
@@ -153,27 +194,45 @@ void TaskAddDialog::setupAddUI()
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // Add input fields
-    mainLayout->addWidget(new QLabel("Task Name:", this));
+    QLabel *taskNameLabel = new QLabel("Task Name:", this);
+    taskNameLabel->setFont(QFont("System", 10));
+    taskNameLabel->setStyleSheet("color: white");
+    mainLayout->addWidget(taskNameLabel);
+    m_taskNameLineEdit->setStyleSheet("border: 1px solid black; color: black; background-color: #F8F6E3; font: 10pt 'System';");
     mainLayout->addWidget(m_taskNameLineEdit);
 
-    mainLayout->addWidget(new QLabel("Course:", this));
+    QLabel *courseLabel = new QLabel("Course:", this);
+    courseLabel->setFont(QFont("System", 10));
+    courseLabel->setStyleSheet("color: white");
+    mainLayout->addWidget(courseLabel);
+    m_courseLineEdit->setStyleSheet("border: 1px solid black; color: black; background-color: #F8F6E3; font: 10pt 'System';");
     mainLayout->addWidget(m_courseLineEdit);
 
-    mainLayout->addWidget(new QLabel("Weight Component:", this));
+    QLabel *weightLabel = new QLabel("Weight Component:", this);
+    weightLabel->setFont(QFont("System", 10));
+    weightLabel->setStyleSheet("color: white");
+    mainLayout->addWidget(weightLabel);
+    m_weightLineEdit->setStyleSheet("border: 1px solid black; color: black; background-color: #F8F6E3; font: 10pt 'System';");
     mainLayout->addWidget(m_weightLineEdit);
 
-    mainLayout->addWidget(new QLabel("Total Score:", this));
+    QLabel *totalScoreLabel = new QLabel("Total Score:", this);
+    totalScoreLabel->setFont(QFont("System", 10));
+    totalScoreLabel->setStyleSheet("color: white");
+    mainLayout->addWidget(totalScoreLabel);
+    m_totalScoreSpinBox->setStyleSheet("border: 1px solid black; color: black; background-color: #F8F6E3; font: 10pt 'System';");
     m_totalScoreSpinBox->setRange(0.0, 200.0);
     mainLayout->addWidget(m_totalScoreSpinBox);
 
     // Add buttons
     QDialogButtonBox *buttonBox = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, this);
+    buttonBox->setStyleSheet("color: black; background-color: #FFBF78; font: 10pt 'System';");
     connect(buttonBox, &QDialogButtonBox::accepted, this, &TaskAddDialog::saveTaskAdd);
     connect(buttonBox, &QDialogButtonBox::rejected, this, &TaskAddDialog::reject);
     mainLayout->addWidget(buttonBox);
 
     setLayout(mainLayout);
 }
+
 
 void TaskAddDialog::setTaskAdd(const Task &task)
 {
