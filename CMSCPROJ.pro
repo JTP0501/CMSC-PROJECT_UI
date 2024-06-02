@@ -10,14 +10,12 @@ CONFIG += c++17
 
 SOURCES += \
     console.cpp \
-    gradecalculator.cpp \
     main.cpp \
     taskeditdialog.cpp \
     todolist.cpp
 
 HEADERS += \
     console.h \
-    gradecalculator.h \
     taskeditdialog.h \
     todolist.h
 

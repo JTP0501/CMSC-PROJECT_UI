@@ -274,6 +274,25 @@ void Console::processCommand(const QString &command)
                             {
                                 m_consoleOutput->append("Failed to create grades file for subject: " + name);
                             }
+
+                            // Create a file for weight components and their values, followed by grade conversions
+                            QString weightGradeFilePath = subjectFolder + "/" + name + "_weight_grade.txt";
+                            qDebug() << "Weight and Grade File Path:" << weightGradeFilePath;
+
+                            QFile weightGradeFile(weightGradeFilePath);
+                            if (weightGradeFile.open(QIODevice::WriteOnly | QIODevice::Text))
+                            {
+                                QTextStream weightGradeOut(&weightGradeFile);
+                                weightGradeOut << "Weight Components and Values:\n";
+                                weightGradeOut << parts[4] << "\n"; // Write weight components and their values
+                                weightGradeOut << "Grade Conversions:\n";
+                                weightGradeOut << parts[5] << "\n"; // Write grade conversions
+                                weightGradeFile.close();
+                            }
+                            else
+                            {
+                                m_consoleOutput->append("Failed to create weight and grade file for subject: " + name);
+                            }
                         }
                         else
                         {
@@ -335,7 +354,7 @@ void Console::processCommand(const QString &command)
                                 out << line << "\n";
                             }
                             csvFile.close();
-                            m_consoleOutput->append("Removed subject: " + subjectName);
+                            m_consoleOutput->append("Removed Subject: " + subjectName);
 
                             // Remove the subject folder
                             QString subjectFolder = desktopPath + "/theta_files/subject_files/" + subjectName;
@@ -662,4 +681,3 @@ void Console::createSubjectFiles()
 
     qDebug() << "Finished createSubjectFiles()";
 }
-

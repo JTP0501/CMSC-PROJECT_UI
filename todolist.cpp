@@ -255,8 +255,16 @@ void CToDoList::onEdit()
                 // If score is greater than or equal to 0, move the task to the subject folder and file
                 if (currentTask.score >= 0) {
                     QString desktopPath = QStandardPaths::writableLocation(QStandardPaths::DesktopLocation);
-                    QString subjectFilePath = desktopPath + "/theta_files/subject_files/" + currentTask.course + "/" + currentTask.course + "_tasks.txt";
+                    QString subjectFolderPath = desktopPath + "/theta_files/subject_files/" + currentTask.course;
 
+                    // Check if the subject folder exists
+                    if (!QDir(subjectFolderPath).exists()) {
+                        // Subject folder doesn't exist
+                        qDebug() << "Subject folder does not exist:" << subjectFolderPath;
+                        return;
+                    }
+
+                    QString subjectFilePath = subjectFolderPath + "/" + currentTask.course + "_tasks.txt";
                     QFile subjectFile(subjectFilePath);
                     if (subjectFile.open(QIODevice::Append | QIODevice::Text))
                     {
@@ -275,16 +283,147 @@ void CToDoList::onEdit()
                         // Remove the task from the original file
                         removeTaskByName(currentTask.taskName, tasksFilePath);
                         loadTasksOnStartup();
-                    }
-                    else
-                    {
+
+                        // After navigating to the subject folder
+                        QString weightGradeFilePath = subjectFolderPath + "/" + currentTask.course + "_weight_grade.txt";
+                        QString subjectTasksFilePath = subjectFolderPath + "/" + currentTask.course + "_tasks.txt";
+
+                        // Debug statements to check file paths
+                        qDebug() << "Weight Grade File Path:" << weightGradeFilePath;
+                        qDebug() << "Tasks File Path:" << subjectTasksFilePath;
+
+                        // Open the tasks file for reading
+                        QFile tasksFile(subjectTasksFilePath);
+                        if (tasksFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                            QTextStream tasksStream(&tasksFile);
+
+                            // Map to store weight component names and their corresponding scores
+                            QMap<QString, double> componentScores;
+                            QMap<QString, int> componentTaskCount;
+
+                            // Read tasks file to calculate scores and count tasks per component
+                            bool headerSkipped = false;
+                            while (!tasksStream.atEnd()) {
+                                QString line = tasksStream.readLine();
+                                // Skip the header line
+                                if (!headerSkipped) {
+                                    headerSkipped = true;
+                                    continue;
+                                }
+
+                                qDebug() << "Task Line:" << line;
+                                QStringList taskDetails = line.split(" - ", Qt::SkipEmptyParts);
+
+                                qDebug() << "Task Details:" << taskDetails;
+
+                                if (taskDetails.size() == 3) {
+                                    QString componentName = taskDetails[1].trimmed();
+                                    QStringList scoreDetails = taskDetails[2].split(" / ", Qt::SkipEmptyParts);
+
+                                    if (scoreDetails.size() == 2) {
+                                        double taskScore = scoreDetails[0].toDouble();
+                                        double totalScore = scoreDetails[1].toDouble();
+
+                                        qDebug() << "Component Name:" << componentName;
+                                        qDebug() << "Task Score:" << taskScore;
+                                        qDebug() << "Total Score:" << totalScore;
+
+                                        double ratio = (totalScore != 0) ? (taskScore / totalScore) : 0.0;
+                                        qDebug() << "Ratio:" << ratio;
+
+                                        componentScores[componentName] += ratio;
+                                        componentTaskCount[componentName]++;
+                                    }
+                                }
+                            }
+
+                            tasksFile.close();
+
+                            // Debug statements to check calculated values
+                            qDebug() << "Component Scores:" << componentScores;
+                            qDebug() << "Component Task Count:" << componentTaskCount;
+
+                            // Calculate the weighted grade for each component
+                            QMap<QString, double> weightedGrades;
+                            for (auto it = componentScores.begin(); it != componentScores.end(); ++it) {
+                                QString componentName = it.key();
+                                double totalWeightedGrade = it.value();
+
+                                // Get the weight value for the component from the weight grades file
+                                double weightValue = 0.0;
+
+                                QFile weightGradeFile(weightGradeFilePath);
+                                if (weightGradeFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                                    QTextStream weightGradeStream(&weightGradeFile);
+
+                                    // Skip the header line
+                                    QString header = weightGradeStream.readLine();
+
+                                    // Read weight grades file to find the weight value for the component
+                                    while (!weightGradeStream.atEnd()) {
+                                        QString line = weightGradeStream.readLine();
+
+                                        // Skip the header line
+                                        if (line.startsWith("Weight Components and Values:")) {
+                                            continue;
+                                        }
+
+                                        int index = line.indexOf(componentName);
+                                        if (index != -1) {
+                                            // Find the hyphen next to the componentName
+                                            int hyphenIndex = line.indexOf('-', index);
+                                            if (hyphenIndex != -1) {
+                                                // Find the end of the value
+                                                int endIndex = line.indexOf('|', hyphenIndex);
+                                                if (endIndex == -1) {
+                                                    endIndex = line.length();
+                                                }
+                                                // Extract the value substring and convert it to double
+                                                QString valueString = line.mid(hyphenIndex + 1, endIndex - hyphenIndex - 1).trimmed();
+                                                weightValue = valueString.toDouble();
+                                                qDebug() << "Weight value for" << componentName << ":" << weightValue;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    weightGradeFile.close();
+                                } else {
+                                    qDebug() << "Failed to open weight grade file for reading:" << weightGradeFilePath;
+                                }
+
+                                // Calculate the weighted grade for the component
+                                double weightedGrade = (weightValue != 0 && componentTaskCount[componentName] != 0) ?
+                                                           totalWeightedGrade * (weightValue / componentTaskCount[componentName]) : 0.0;
+
+                                // Store the weighted grade for the component
+                                weightedGrades[componentName] = weightedGrade;
+                            }
+
+                            // Write the weighted grades to the subject_grades.txt file
+                            QString subjectGradesFilePath = subjectFolderPath + "/" + currentTask.course + "_grades.txt";
+                            QFile subjectGradesFile(subjectGradesFilePath);
+                            if (subjectGradesFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                                QTextStream subjectGradesStream(&subjectGradesFile);
+
+                                // Write the updated grade breakdown to the subject_grades.txt file
+                                subjectGradesStream << "Grade Breakdown for " << currentTask.course << ":\n";
+                                for (auto it = weightedGrades.begin(); it != weightedGrades.end(); ++it) {
+                                    subjectGradesStream << it.key() << ": " << it.value() << "\n";
+                                }
+
+                                // Close the subject_grades.txt file
+                                subjectGradesFile.close();
+                            } else {
+                                qDebug() << "Failed to open subject grades file for writing:" << subjectGradesFilePath;
+                            }
+                        } else {
+                            qDebug() << "Failed to open tasks file for reading:" << subjectTasksFilePath;
+                        }
+                    } else {
                         qDebug() << "Failed to open subject file for writing:" << subjectFilePath;
                     }
                 }
-
-                // Refresh the list of tasks from the file
-                loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 1);
-                loadTasksFromFile(tasksFilePath, static_cast<QStringListModel*>(m_pwOngoing->model()), 0);
             }
         } else {
             // Existing logic for editing tasks that are not waitlisted

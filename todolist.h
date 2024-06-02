@@ -7,7 +7,7 @@
 #include <QListView>
 #include <QStringListModel>
 #include "console.h"
-#include "gradecalculator.h"
+
 
 struct Task {
     QString taskName;
@@ -59,6 +59,7 @@ private:
     Console* m_console;
 
     QString tasksFilePath;
+    QString weightGradeFilePath;
 };
 
 #endif // TODOLIST_H
