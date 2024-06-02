@@ -14,6 +14,9 @@ TaskEditDialog::TaskEditDialog(QWidget *parent)
     m_totalScoreSpinBox(new QDoubleSpinBox(this))
 {
     setupEditUI();
+    // In TaskEditDialog class
+    connect(m_courseLineEdit, &QLineEdit::textChanged, this, &TaskEditDialog::convertToUpperCaseEdit);
+    connect(m_weightLineEdit, &QLineEdit::textChanged, this, &TaskEditDialog::convertToUpperCaseEdit);
 }
 
 void TaskEditDialog::setupEditUI()
@@ -135,8 +138,13 @@ TaskAddDialog::TaskAddDialog(QWidget *parent)
     m_courseLineEdit(new QLineEdit(this)),
     m_weightLineEdit(new QLineEdit(this)),
     m_totalScoreSpinBox(new QDoubleSpinBox(this))
+
 {
     setupAddUI();
+
+    // In TaskAddDialog class
+    connect(m_courseLineEdit, &QLineEdit::textChanged, this, &TaskAddDialog::convertToUpperCaseAdd);
+    connect(m_weightLineEdit, &QLineEdit::textChanged, this, &TaskAddDialog::convertToUpperCaseAdd);
 }
 
 void TaskAddDialog::setupAddUI()
@@ -199,3 +207,17 @@ void TaskAddDialog::saveTaskAdd()
         accept();
     }
 }
+
+void TaskEditDialog::convertToUpperCaseEdit()
+{
+    m_courseLineEdit->setText(m_courseLineEdit->text().toUpper());
+    m_weightLineEdit->setText(m_weightLineEdit->text().toUpper());
+}
+
+void TaskAddDialog::convertToUpperCaseAdd()
+{
+    m_courseLineEdit->setText(m_courseLineEdit->text().toUpper());
+    m_weightLineEdit->setText(m_weightLineEdit->text().toUpper());
+}
+
+

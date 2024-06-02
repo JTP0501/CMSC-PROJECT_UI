@@ -170,6 +170,70 @@ CToDoList::CToDoList(QWidget *parent)
     connect(m_pwWaitlisted, &QListView::entered, this, &CToDoList::onWaitlistedHovered);
 }
 
+QMap<double, QString> parseGradeConversions(const QString& filePath) {
+    QMap<double, QString> gradeMap;
+
+    QFile gradeConversionsFile(filePath);
+    if (gradeConversionsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        QTextStream gradeConversionsStream(&gradeConversionsFile);
+
+        // Skip to the "Grade Conversions:" line
+        bool headerFound = false;
+        while (!gradeConversionsStream.atEnd()) {
+            QString line = gradeConversionsStream.readLine().trimmed();
+            qDebug() << "Reading line:" << line;
+            if (line == "Grade Conversions:") {
+                headerFound = true;
+                qDebug() << "Header 'Grade Conversions:' found.";
+                break;
+            }
+        }
+
+        if (!headerFound) {
+            qDebug() << "Header 'Grade Conversions:' not found in the file.";
+        }
+
+        // Parse grade conversions
+        while (!gradeConversionsStream.atEnd()) {
+            QString line = gradeConversionsStream.readLine().trimmed();
+            qDebug() << "Parsing line:" << line;
+
+            // Each line should be in the format of "Grade:Range"
+            QStringList conversions = line.split('|', Qt::SkipEmptyParts);
+            for (const QString& conversion : conversions) {
+                QStringList parts = conversion.split(':', Qt::SkipEmptyParts);
+                if (parts.size() == 2) {
+                    QString grade = parts[0].trimmed();
+                    QStringList rangeParts = parts[1].split('-', Qt::SkipEmptyParts);
+                    if (rangeParts.size() == 2) {
+                        bool lowerBoundOk, upperBoundOk;
+                        double lowerBound = rangeParts[0].toDouble(&lowerBoundOk);
+                        double upperBound = rangeParts[1].toDouble(&upperBoundOk);
+                        if (lowerBoundOk && upperBoundOk) {
+                            qDebug() << "Parsed grade:" << grade << "with range:" << lowerBound << "-" << upperBound;
+                            gradeMap[lowerBound] = grade;
+                        } else {
+                            qDebug() << "Failed to convert bounds to double: lower =" << rangeParts[0] << " upper =" << rangeParts[1];
+                        }
+                    } else {
+                        qDebug() << "Invalid range format:" << parts[1];
+                    }
+                } else {
+                    qDebug() << "Invalid conversion line format:" << conversion;
+                }
+            }
+        }
+
+        gradeConversionsFile.close();
+    } else {
+        qDebug() << "Failed to open grade conversions file for reading:" << filePath;
+    }
+
+    qDebug() << "Grade Map after parsing:" << gradeMap;
+    return gradeMap;
+}
+
+
 // TASK MANAGEMENT OPERATIONS
 
 // Slot to add a task
@@ -343,7 +407,7 @@ void CToDoList::onEdit()
                             qDebug() << "Component Scores:" << componentScores;
                             qDebug() << "Component Task Count:" << componentTaskCount;
 
-                            // Calculate the weighted grade for each component
+                            // Map to store the weighted grades
                             QMap<QString, double> weightedGrades;
                             for (auto it = componentScores.begin(); it != componentScores.end(); ++it) {
                                 QString componentName = it.key();
@@ -400,6 +464,17 @@ void CToDoList::onEdit()
                                 weightedGrades[componentName] = weightedGrade;
                             }
 
+                            // Calculate the total weighted grade
+                            double totalWeightedGrade = 0.0;
+                            qDebug() << "Weighted Grades Map:" << weightedGrades;
+
+                            for (auto it = weightedGrades.begin(); it != weightedGrades.end(); ++it) {
+                                qDebug() << "Component:" << it.key() << "Weighted Grade:" << it.value();
+                                totalWeightedGrade += it.value();
+                            }
+
+                            qDebug() << "Total Weighted Grade:" << totalWeightedGrade;
+
                             // Write the weighted grades to the subject_grades.txt file
                             QString subjectGradesFilePath = subjectFolderPath + "/" + currentTask.course + "_grades.txt";
                             QFile subjectGradesFile(subjectGradesFilePath);
@@ -415,55 +490,18 @@ void CToDoList::onEdit()
                                 // Close the subject_grades.txt file
                                 subjectGradesFile.close();
 
-                                // Calculate the total weighted grade
-                                double totalWeightedGrade = 0.0;
-                                for (auto it = weightedGrades.begin(); it != weightedGrades.end(); ++it) {
-                                    totalWeightedGrade += it.value();
-                                }
+                                // Load grade conversions
+                                QString weightGradeFilePath = subjectFolderPath + "/" + currentTask.course + "_weight_grade.txt";
+                                QMap<double, QString> gradeMap = parseGradeConversions(weightGradeFilePath);
 
-                                // Convert the total weighted grade to the final grade using grade conversions
+                                // Calculate final grade
                                 QString finalGrade = "5.00"; // Default final grade if not found in grade conversions
-                                bool foundGrade = false; // Flag to indicate if the final grade is found
-
-                                QFile gradeConversionsFile(weightGradeFilePath);
-                                if (gradeConversionsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-                                    QTextStream gradeConversionsStream(&gradeConversionsFile);
-
-                                    // Skip the "Grade Conversions:" line
-                                    while (!gradeConversionsStream.atEnd()) {
-                                        QString line = gradeConversionsStream.readLine().trimmed();
-                                        if (line == "Grade Conversions:") {
-                                            // Found the line, break to start parsing conversions
-                                            break;
-                                        }
-                                    }
-
-                                    // Parse grade conversions
-                                    while (!gradeConversionsStream.atEnd()) {
-                                        QString line = gradeConversionsStream.readLine().trimmed();
-                                        QStringList conversions = line.split(':', Qt::SkipEmptyParts);
-                                        if (conversions.size() == 2) {
-                                            double lowerBound = conversions[1].section('-', 0, 0).toDouble();
-                                            double upperBound = conversions[1].section('-', 1, 1).toDouble();
-                                            QString grade = conversions[0];
-
-                                            if (totalWeightedGrade >= lowerBound && totalWeightedGrade <= upperBound) {
-                                                finalGrade = grade;
-                                                foundGrade = true;
-                                                qDebug() << "Total weighted grade:" << totalWeightedGrade;
-                                                qDebug() << "Final grade:" << finalGrade;
-                                                break;
-                                            }
-                                        }
-                                    }
-
-                                    if (!foundGrade) {
-                                        qDebug() << "Total weighted grade exceeds all grade conversions. Setting final grade to 5.00";
-                                    }
-
-                                    gradeConversionsFile.close();
-                                } else {
-                                    qDebug() << "Failed to open grade conversions file for reading:" << weightGradeFilePath;
+                                auto it = gradeMap.constBegin();
+                                while (it != gradeMap.constEnd() && totalWeightedGrade >= it.key()) {
+                                    finalGrade = it.value();
+                                    qDebug() << "Total weighted grade:" << totalWeightedGrade;
+                                    qDebug() << "Final grade:" << finalGrade;
+                                    ++it; // Move to the next grade entry
                                 }
 
                                 // Append the final grade to the subject_grades.txt file
@@ -794,3 +832,4 @@ QString CToDoList::getTaskNameAtCursor(QListView* listView)
     }
     return QString();
 }
+

@@ -16,6 +16,7 @@ public:
     TaskEditDialog(QWidget *parent = nullptr);
     void setTaskEdit(const Task &task);
     Task getTaskEdit() const;
+    void convertToUpperCaseEdit();
 
 private slots:
     void saveTaskEdit();
@@ -27,6 +28,7 @@ private:
     QLineEdit *m_courseLineEdit;
     QLineEdit *m_weightLineEdit;
     QDoubleSpinBox *m_totalScoreSpinBox;
+
 };
 
 class TaskEditScoreDialog : public QDialog
@@ -59,6 +61,7 @@ public:
     TaskAddDialog(QWidget *parent = nullptr);
     void setTaskAdd(const Task &task);
     Task getTaskAdd() const;
+    void convertToUpperCaseAdd();
 
 private slots:
     void saveTaskAdd();
