@@ -16,5 +16,9 @@
         <file>Fonts/cour.ttf</file>
         <file>bg2.jpg</file>
         <file>paperboardbg.jpg</file>
+        <file>pxArt.png</file>
+        <file>pattern.png</file>
+        <file>Fonts/VT323-Regular.ttf</file>
+        <file>pxArt (3).png</file>
     </qresource>
 </RCC>
