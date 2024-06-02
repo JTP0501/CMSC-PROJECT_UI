@@ -414,6 +414,69 @@ void CToDoList::onEdit()
 
                                 // Close the subject_grades.txt file
                                 subjectGradesFile.close();
+
+                                // Calculate the total weighted grade
+                                double totalWeightedGrade = 0.0;
+                                for (auto it = weightedGrades.begin(); it != weightedGrades.end(); ++it) {
+                                    totalWeightedGrade += it.value();
+                                }
+
+                                // Convert the total weighted grade to the final grade using grade conversions
+                                QString finalGrade = "5.00"; // Default final grade if not found in grade conversions
+                                bool foundGrade = false; // Flag to indicate if the final grade is found
+
+                                QFile gradeConversionsFile(weightGradeFilePath);
+                                if (gradeConversionsFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                                    QTextStream gradeConversionsStream(&gradeConversionsFile);
+
+                                    // Skip the "Grade Conversions:" line
+                                    while (!gradeConversionsStream.atEnd()) {
+                                        QString line = gradeConversionsStream.readLine().trimmed();
+                                        if (line == "Grade Conversions:") {
+                                            // Found the line, break to start parsing conversions
+                                            break;
+                                        }
+                                    }
+
+                                    // Parse grade conversions
+                                    while (!gradeConversionsStream.atEnd()) {
+                                        QString line = gradeConversionsStream.readLine().trimmed();
+                                        QStringList conversions = line.split(':', Qt::SkipEmptyParts);
+                                        if (conversions.size() == 2) {
+                                            double lowerBound = conversions[1].section('-', 0, 0).toDouble();
+                                            double upperBound = conversions[1].section('-', 1, 1).toDouble();
+                                            QString grade = conversions[0];
+
+                                            if (totalWeightedGrade >= lowerBound && totalWeightedGrade <= upperBound) {
+                                                finalGrade = grade;
+                                                foundGrade = true;
+                                                qDebug() << "Total weighted grade:" << totalWeightedGrade;
+                                                qDebug() << "Final grade:" << finalGrade;
+                                                break;
+                                            }
+                                        }
+                                    }
+
+                                    if (!foundGrade) {
+                                        qDebug() << "Total weighted grade exceeds all grade conversions. Setting final grade to 5.00";
+                                    }
+
+                                    gradeConversionsFile.close();
+                                } else {
+                                    qDebug() << "Failed to open grade conversions file for reading:" << weightGradeFilePath;
+                                }
+
+                                // Append the final grade to the subject_grades.txt file
+                                QString subjectGradesFilePath = subjectFolderPath + "/" + currentTask.course + "_grades.txt";
+                                QFile subjectGradesFile(subjectGradesFilePath);
+                                if (subjectGradesFile.open(QIODevice::Append | QIODevice::Text)) {
+                                    QTextStream subjectGradesStream(&subjectGradesFile);
+                                    subjectGradesStream << "Final Grade for " << currentTask.course << ": " << finalGrade << "\n";
+                                    subjectGradesFile.close();
+                                } else {
+                                    qDebug() << "Failed to open subject grades file for writing:" << subjectGradesFilePath;
+                                }
+
                             } else {
                                 qDebug() << "Failed to open subject grades file for writing:" << subjectGradesFilePath;
                             }
