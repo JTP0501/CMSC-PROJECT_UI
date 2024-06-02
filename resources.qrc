@@ -4,5 +4,17 @@
         <file>2trash_btn.png</file>
         <file>3edit_btn.png</file>
         <file>4refresh_btn.png</file>
+        <file>Fonts/8514fix.fon</file>
+        <file>Fonts/8514sys.fon</file>
+        <file>Fonts/Candara.ttf</file>
+        <file>Fonts/comic.ttf</file>
+        <file>Fonts/Gabriola.ttf</file>
+        <file>Fonts/impact.ttf</file>
+        <file>Fonts/Inkfree.ttf</file>
+        <file>Fonts/times.ttf</file>
+        <file>Fonts/arial.ttf</file>
+        <file>Fonts/cour.ttf</file>
+        <file>bg2.jpg</file>
+        <file>paperboardbg.jpg</file>
     </qresource>
 </RCC>

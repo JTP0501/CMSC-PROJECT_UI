@@ -8,6 +8,15 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv); // Create a QApplication instance
 
+    a.setStyleSheet(
+        "QListView { "
+        "   background-image: url(:/bg2.jpg); " // Set the background image
+        "   background-repeat: no-repeat; " // Prevent background image from repeating
+        "   background-position: center; " // Center the background image
+        "   background-color: transparent; " // Fallback background color
+        "} "
+    );
+
     // Translator stuff, do not touch
     QTranslator translator; // Create a translator object for handling translations
 
